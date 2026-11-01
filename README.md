@@ -62,3 +62,16 @@ La línea de tiempo sitúa entregas, porque el modelo no tiene una fecha de inic
 Las pruebas cubren interpretación natural, mediodía/medianoche, límites mensuales, rachas, recuperación de datos, recurrencia única, deshacer y fallos de almacenamiento. Se revisaron en navegador el onboarding, creación, checklist, comentario, persistencia tras recargar, arrastre entre columnas mediante teclado, vistas alternativas, sincronización entre pestañas y tamaños de escritorio/móvil. No se afirma una medición de 60 fps ni una auditoría WCAG completa. Probar con dispositivos reales y un backend compartido sigue siendo el siguiente paso antes de un uso colaborativo de producción.
 
 Referencia de compilación: [documentación oficial de Vite](https://vite.dev/guide/static-deploy).
+
+## Correcciones del 1 de noviembre de 2026
+
+- La creación despeja filtros y vuelve al tablero para que una tarea nueva no quede oculta en Mi día, Actividad, Calendario o un filtro de otra persona.
+- El botón + móvil abre un formulario con título, persona y columna. El botón de envío tiene texto visible; el cierre del formulario de columna se llama «Cerrar», en lugar de «Listo».
+- Arrastrar a Hecho, completar una tarea recurrente y convertir un paso en tarea son operaciones reversibles completas, sin estados intermedios al deshacer.
+- El doble clic edita en línea sin abrir el detalle antes; la flecha para pasar la pelota reasigna realmente. Las transformaciones del arrastre y las animaciones de tarjeta usan elementos separados.
+- Los cambios de perfil pertenecen a cada pestaña y no entran en el historial de deshacer. Las asignaciones actualizan los miembros del tablero y quitan el foco de la persona anterior.
+- El importador valida campos, referencias, fechas e identificadores antes de aceptar una copia. Un archivo inválido no conserva una confirmación de importación anterior. Los datos dañados se conservan en una copia de recuperación descargable desde el perfil.
+- Las preferencias toleran almacenamiento bloqueado; el estado de guardado muestra los errores. Se rechazan fechas y horas imposibles y se reconocen horas de 24 horas.
+- La PWA conserva la aplicación offline cuando aparece una pantalla de inicio de sesión, devuelve una respuesta válida si falta un recurso y solo limpia cachés de Órbita.
+
+Se añadieron pruebas de interacción de React además de pruebas de lógica y del service worker. Los flujos principales también se comprobaron sobre la compilación de producción en el navegador.

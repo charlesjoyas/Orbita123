@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { nextDue, parseQuick, streak } from "./utils";
+import { isValidDue, nextDue, parseQuick, streak } from "./utils";
+import { isData } from "../data/validation";
 import { seedData } from "../data/seed";
 const values = new Map<string, string>();
 vi.stubGlobal("localStorage", {
@@ -19,6 +20,26 @@ beforeEach(() => {
 });
 afterEach(() => vi.useRealTimers());
 describe("Creación natural", () => {
+  it("conserva fechas y horas inválidas sin convertirlas en metadatos rotos", () => {
+    const parsed = parseQuick(
+      "Revisar 2026-02-31 99pm",
+      seedData().members,
+      "me",
+    );
+    expect(parsed.due).toBe("");
+    expect(parsed.title).toContain("2026-02-31");
+    expect(parsed.title).toContain("99pm");
+    expect(isValidDue("2026-02-31")).toBe(false);
+  });
+  it("entiende horas de 24 horas y evita etiquetas duplicadas", () => {
+    const parsed = parseQuick(
+      "Llamar mañana 15:30 #Idea #Idea",
+      seedData().members,
+      "me",
+    );
+    expect(parsed.due).toBe("2026-11-01T15:30");
+    expect(parsed.tags).toEqual(["Idea"]);
+  });
   it("interpreta persona, fecha, hora, prioridad y etiqueta sin perder el título", () => {
     const data = seedData();
     expect(
@@ -62,30 +83,109 @@ describe("Recurrencia y calendario", () => {
   });
 });
 describe("Cambios reversibles", () => {
+  it("mover a Hecho y su recurrencia se deshacen con un solo paso", () => {
+    const store = useStore.getState();
+    const task = store.data.tasks[3];
+    store.patchTask(task.id, { recurrence: "diaria" });
+    const before = structuredClone(useStore.getState().data);
+    store.moveTask(task.id, before.boards[0].columns.at(-1)!.id);
+    expect(useStore.getState().data.tasks.length).toBe(before.tasks.length + 1);
+    store.undo();
+    expect(useStore.getState().data).toEqual(before);
+  });
+  it("completar de nuevo no agrega un paso vacío a Deshacer", () => {
+    const store = useStore.getState();
+    const task = store.data.tasks[0];
+    store.complete(task.id);
+    const size = useStore.getState().past.length;
+    store.complete(task.id);
+    expect(useStore.getState().past.length).toBe(size);
+  });
+  it("convertir un paso crea una tarea y lo elimina en la misma operación", () => {
+    const store = useStore.getState();
+    const task = store.data.tasks[3];
+    store.commit(() => {});
+    const before = structuredClone(useStore.getState().data);
+    const id = store.convertStep(task.id, task.checklist[0].id);
+    expect(useStore.getState().data.tasks.some((t) => t.id === id)).toBe(true);
+    store.undo();
+    expect(useStore.getState().data).toEqual(before);
+  });
+  it("rechaza destinos inexistentes y títulos vacíos sin crear tarjetas huérfanas", () => {
+    const store = useStore.getState();
+    expect(store.addTask("missing", "missing", "Una tarea")).toBe("");
+    expect(
+      store.addTask(
+        store.data.boards[0].id,
+        store.data.boards[0].columns[0].id,
+        "   ",
+      ),
+    ).toBe("");
+    expect(useStore.getState().data.tasks.length).toBe(10);
+  });
+  it("la identidad de la pestaña se conserva al deshacer el trabajo", () => {
+    const store = useStore.getState();
+    store.patchTask(store.data.tasks[0].id, { title: "Cambio" });
+    store.setCurrentUser("vale");
+    store.undo();
+    expect(useStore.getState().data.currentUser).toBe("vale");
+    expect(useStore.getState().data.tasks[0].title).not.toBe("Cambio");
+  });
   it("marca como completada una tarea creada directamente en Hecho", () => {
-    const board=useStore.getState().data.boards[0];
-    const id=useStore.getState().addTask(board.id,board.columns.at(-1)!.id,"Una victoria");
-    expect(useStore.getState().data.tasks.find(t=>t.id===id)?.completedAt).toBeTruthy();
+    const board = useStore.getState().data.boards[0];
+    const id = useStore
+      .getState()
+      .addTask(board.id, board.columns.at(-1)!.id, "Una victoria");
+    expect(
+      useStore.getState().data.tasks.find((t) => t.id === id)?.completedAt,
+    ).toBeTruthy();
   });
   it("incluye en el tablero a una persona al asignarle una tarea", () => {
-    useStore.getState().commit(d=>{d.members.push({id:'new',name:'Sol',emoji:'☀️',color:'#aabbcc',status:'disponible'})});
-    const id=useStore.getState().data.tasks[0].id;
-    useStore.getState().patchTask(id,{assignee:'new'});
-    expect(useStore.getState().data.boards[0].members).toContain('new');
+    useStore.getState().commit((d) => {
+      d.members.push({
+        id: "new",
+        name: "Sol",
+        emoji: "☀️",
+        color: "#aabbcc",
+        status: "disponible",
+      });
+    });
+    const id = useStore.getState().data.tasks[0].id;
+    useStore.getState().patchTask(id, { assignee: "new" });
+    expect(useStore.getState().data.boards[0].members).toContain("new");
   });
   it("renueva el foco al cambiar el día y conserva las rachas", () => {
-    useStore.getState().commit(d=>{d.focusDays=['2026-10-30']});
-    vi.setSystemTime(new Date(2026,10,1,12));
-    useStore.getState().commit(()=>{});
-    expect(useStore.getState().data.tasks.every(t=>t.focus.length===0)).toBe(true);
-    expect(useStore.getState().data.focusDays).toEqual(['2026-10-30']);
+    useStore.getState().commit((d) => {
+      d.focusDays = ["2026-10-30"];
+    });
+    vi.setSystemTime(new Date(2026, 10, 1, 12));
+    useStore.getState().commit(() => {});
+    expect(
+      useStore.getState().data.tasks.every((t) => t.focus.length === 0),
+    ).toBe(true);
+    expect(useStore.getState().data.focusDays).toEqual(["2026-10-30"]);
   });
   it("mantiene integridad y deshacer con más de 250 tarjetas", () => {
-    useStore.getState().commit(d=>{const source=d.tasks[0];for(let i=0;i<250;i++)d.tasks.push({...structuredClone(source),id:`bulk-${i}`,title:`Idea ${i}`})});
-    const before=structuredClone(useStore.getState().data);
-    useStore.getState().patchTask('bulk-249',{title:'Última idea revisada',priority:'urgente'});
+    useStore.getState().commit((d) => {
+      const source = d.tasks[0];
+      for (let i = 0; i < 250; i++)
+        d.tasks.push({
+          ...structuredClone(source),
+          id: `bulk-${i}`,
+          title: `Idea ${i}`,
+        });
+    });
+    const before = structuredClone(useStore.getState().data);
+    useStore
+      .getState()
+      .patchTask("bulk-249", {
+        title: "Última idea revisada",
+        priority: "urgente",
+      });
     expect(useStore.getState().data.tasks.length).toBe(260);
-    expect(useStore.getState().data.tasks.find(t=>t.id==='bulk-249')?.title).toBe('Última idea revisada');
+    expect(
+      useStore.getState().data.tasks.find((t) => t.id === "bulk-249")?.title,
+    ).toBe("Última idea revisada");
     useStore.getState().undo();
     expect(useStore.getState().data).toEqual(before);
   });
@@ -147,5 +247,25 @@ describe("Cambios reversibles", () => {
     expect(useStore.getState().storageError).toBe(true);
     expect(useStore.getState().data.tasks[0].title).toBe("Trabajo conservado");
     localStorage.setItem = save;
+  });
+});
+describe("Copias de seguridad", () => {
+  it("acepta el espacio generado y su serialización", () => {
+    expect(isData(seedData())).toBe(true);
+    expect(isData(JSON.parse(JSON.stringify(seedData())))).toBe(true);
+  });
+  it("rechaza campos ausentes y referencias rotas sin reemplazar el espacio actual", () => {
+    const data = seedData();
+    const invalid = JSON.parse(JSON.stringify(data));
+    delete invalid.tasks[0].description;
+    expect(isData(invalid)).toBe(false);
+    invalid.tasks[0] = data.tasks[0];
+    invalid.tasks[0].columnId = "missing";
+    expect(isData(invalid)).toBe(false);
+  });
+  it("rechaza identificadores duplicados", () => {
+    const data = seedData();
+    data.tasks.push(structuredClone(data.tasks[0]));
+    expect(isData(data)).toBe(false);
   });
 });

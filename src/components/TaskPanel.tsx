@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   CalendarDays,
   Check,
@@ -37,6 +37,11 @@ export default function TaskPanel({
   const patch = useStore((s) => s.patchTask);
   const commit = useStore((s) => s.commit);
   const notify = useStore((s) => s.notify);
+  const [titleDraft, setTitleDraft] = useState(task?.title || "");
+  const [tagsDraft, setTagsDraft] = useState(task?.tags.join(", ") || "");
+  const tagText = task?.tags.join(", ") || "";
+  useEffect(() => setTitleDraft(task?.title || ""), [task?.title]);
+  useEffect(() => setTagsDraft(tagText), [tagText]);
   const [item, setItem] = useState("");
   const [comment, setComment] = useState("");
   const [note, setNote] = useState("");
@@ -85,11 +90,14 @@ export default function TaskPanel({
       return;
     }
     const reader = new FileReader();
+    reader.onerror = () =>
+      notify("No pudimos leer ese archivo. Prueba a seleccionarlo de nuevo.");
     reader.onload = () =>
       update(
         {
           attachments: [
-            ...task!.attachments,
+            ...(useStore.getState().data.tasks.find((t) => t.id === id)
+              ?.attachments || []),
             { id: uid(), name: file.name, url: reader.result as string },
           ],
         },
@@ -115,10 +123,12 @@ export default function TaskPanel({
           </button>
           <textarea
             aria-label="Título de tarea"
-            value={task.title}
-            onChange={(e) => update({ title: e.target.value })}
+            value={titleDraft}
+            onChange={(e) => setTitleDraft(e.target.value)}
             onBlur={() => {
-              if (!task.title.trim()) update({ title: "Una nueva idea" });
+              const clean = titleDraft.trim();
+              if (clean && clean !== task.title) update({ title: clean });
+              else if (!clean) setTitleDraft(task.title);
             }}
             rows={2}
           />
@@ -127,6 +137,9 @@ export default function TaskPanel({
           <button
             className={task.focus.includes(data.currentUser) ? "selected" : ""}
             onClick={() => {
+              if(!task.focus.includes(data.currentUser)&&(task.assignee!==data.currentUser||task.completedAt)){
+                notify(task.completedAt?'Esa tarea ya está lista. Elige una pendiente para tu foco 🌿':'Para traerla a tu foco, asígnatela primero.');return;
+              }
               const focuses = data.tasks.filter(
                 (t) => t.focus.includes(data.currentUser) && !t.completedAt,
               );
@@ -179,22 +192,25 @@ export default function TaskPanel({
             onSubmit={(e) => {
               e.preventDefault();
               update(
-                { assignee: recipient },
+                {
+                  assignee: recipient,
+                  ...(note.trim()
+                    ? {
+                        comments: [
+                          ...task.comments,
+                          {
+                            id: uid(),
+                            author: data.currentUser,
+                            text: note.trim(),
+                            at: new Date().toISOString(),
+                            reactions: {},
+                          },
+                        ],
+                      }
+                    : {}),
+                },
                 `pasó la pelota de «${task.title}» a ${data.members.find((m) => m.id === recipient)?.name} 🏀`,
               );
-              if (note.trim())
-                update({
-                  comments: [
-                    ...task.comments,
-                    {
-                      id: uid(),
-                      author: data.currentUser,
-                      text: note.trim(),
-                      at: new Date().toISOString(),
-                      reactions: {},
-                    },
-                  ],
-                });
               setPassing(false);
               setNote("");
             }}
@@ -318,7 +334,8 @@ export default function TaskPanel({
           <input
             aria-label="Etiquetas separadas por comas"
             placeholder="Diseño, Ideas…"
-            defaultValue={task.tags.join(", ")}
+            value={tagsDraft}
+            onChange={(e) => setTagsDraft(e.target.value)}
             onBlur={(e) =>
               update({
                 tags: e.target.value
@@ -401,14 +418,7 @@ export default function TaskPanel({
                 title="Convertir en tarea"
                 aria-label={`Convertir ${c.text} en tarea`}
                 onClick={() => {
-                  useStore
-                    .getState()
-                    .addTask(board.id, task.columnId, c.text, {
-                      assignee: task.assignee,
-                    });
-                  update({
-                    checklist: task.checklist.filter((x) => x.id !== c.id),
-                  });
+                  useStore.getState().convertStep(id, c.id);
                 }}
               >
                 <ArrowUpRight size={14} />

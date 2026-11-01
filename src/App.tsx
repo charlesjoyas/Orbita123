@@ -50,6 +50,10 @@ import BoardView from "./components/BoardView";
 import QuickAdd from "./components/QuickAdd";
 import TaskPanel from "./components/TaskPanel";
 import Views from "./components/Views";
+import { readPreference, writePreference } from "./lib/preferences";
+import CreateTaskDialog from "./components/CreateTaskDialog";
+import { isData } from "./data/validation";
+import { getRecoveryData, repositoryWarning } from "./data/repository";
 type Dialog =
   | "board"
   | "column"
@@ -58,6 +62,7 @@ type Dialog =
   | "help"
   | "command"
   | "onboarding"
+  | "create"
   | "templates"
   | null;
 const backgrounds = [
@@ -69,8 +74,9 @@ const backgrounds = [
 function App() {
   const data = useStore((s) => s.data);
   const notify = useStore((s) => s.notify);
+  const storageError = useStore((s) => s.storageError);
   const [boardId, setBoardId] = useState(
-    () => localStorage.getItem("orbita:board") || data.boards[0].id,
+    () => readPreference("orbita:board") || data.boards[0].id,
   );
   const board = data.boards.find((b) => b.id === boardId) || data.boards[0];
   const user = data.members.find((m) => m.id === data.currentUser)!;
@@ -81,7 +87,7 @@ function App() {
   );
   const [editingColumn, setEditingColumn] = useState<Column | null>(null);
   const [dark, setDark] = useState(
-    () => localStorage.getItem("orbita:dark") === "true",
+    () => readPreference("orbita:dark") === "true",
   );
   const [search, setSearch] = useState("");
   const [person, setPerson] = useState("all");
@@ -98,6 +104,9 @@ function App() {
   const searchRef = useRef<HTMLInputElement>(null);
   const [online, setOnline] = useState(navigator.onLine);
   const [flying, setFlying] = useState(false);
+  useEffect(() => {
+    if (repositoryWarning) notify(repositoryWarning);
+  }, [notify]);
   const lastActivity = useRef(data.activities[0]?.id);
   const pull = useRef(0);
   useEffect(() => {
@@ -137,10 +146,10 @@ function App() {
   }, []);
   useEffect(() => {
     document.documentElement.dataset.theme = dark ? "dark" : "light";
-    localStorage.setItem("orbita:dark", String(dark));
+    writePreference("orbita:dark", String(dark));
   }, [dark]);
   useEffect(() => {
-    localStorage.setItem("orbita:board", board.id);
+    writePreference("orbita:board", board.id);
   }, [board.id]);
   useEffect(() => {
     const on = () => setOnline(navigator.onLine);
@@ -177,7 +186,7 @@ function App() {
         colors: ["#9d8bcf", "#f2bd9c", "#a4c7af", "#ead18f"],
         disableForReducedMotion: true,
       });
-    if (localStorage.getItem("orbita:sound") === "true") {
+    if (readPreference("orbita:sound") === "true") {
       try {
         const audio = new AudioContext();
         const oscillator = audio.createOscillator();
@@ -211,6 +220,7 @@ function App() {
       const input = (e.target as HTMLElement).closest(
         "input,textarea,select,[contenteditable=true]",
       );
+      if ((dialog && dialog !== "command") || taskId || concentrating) return;
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setDialog((d) => (d === "command" ? null : "command"));
@@ -223,6 +233,7 @@ function App() {
         return;
       }
       if (input) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.key === "?") setDialog("help");
       if (e.key === "n") {
         e.preventDefault();
@@ -239,6 +250,14 @@ function App() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [dialog, taskId, concentrating]);
+  const taskCreated = (id: string) => {
+    const task = useStore.getState().data.tasks.find((t) => t.id === id);
+    if (!task) return;
+    changeBoard(task.boardId);
+    const kanban=document.querySelector<HTMLElement>('.kanban');
+    const column=kanban?.querySelector<HTMLElement>(`[data-column-id="${task.columnId}"]`);
+    if(kanban&&column)kanban.scrollTo?.({left:column.offsetLeft-kanban.offsetLeft,behavior:'smooth'});
+  };
   const allTasks = data.tasks.filter((t) => t.boardId === board.id);
   const tasks = useMemo(
     () =>
@@ -473,7 +492,11 @@ function App() {
               </button>
               <span className="local-status">
                 <i className={online ? "" : "offline"} />
-                {online ? "Guardado en este navegador" : "Sin conexión"}
+                {storageError
+                  ? "Cambios sin guardar"
+                  : online
+                    ? "Guardado en este navegador"
+                    : "Sin conexión"}
               </span>
               <button
                 className="icon-button notification-button"
@@ -656,6 +679,8 @@ function App() {
                 boardId={board.id}
                 columnId={board.columns[0]?.id || ""}
                 focusKey={quickFocus}
+                onCreated={taskCreated}
+                onRequestCreate={() => setDialog("create")}
               />
               <button
                 className="template-button"
@@ -837,6 +862,7 @@ function App() {
                       setEditingColumn(c);
                       setDialog("column");
                     }}
+                    onTaskCreated={taskCreated}
                     onAddColumn={() => {
                       setEditingColumn(null);
                       setDialog("column");
@@ -883,8 +909,7 @@ function App() {
             className="mobile-create"
             aria-label="Crear tarea"
             onClick={() => {
-              setQuickFocus((x) => x + 1);
-              window.scrollTo({ top: 150, behavior: "smooth" });
+              setDialog("create");
             }}
           >
             <Plus size={25} />
@@ -902,6 +927,16 @@ function App() {
           </button>
         </nav>
         <AnimatePresence>
+          {dialog === "create" && (
+            <CreateTaskDialog
+              board={board}
+              onClose={() => setDialog(null)}
+              onCreated={(id) => {
+                taskCreated(id);
+                setDialog(null);
+              }}
+            />
+          )}
           {flying && (
             <motion.span
               className="flying-ball"
@@ -1009,7 +1044,10 @@ function App() {
                 <div className="timer-controls">
                   <button
                     className="primary"
-                    onClick={() => setRunning(!running)}
+                    onClick={() => {
+                      if (timer === 0) setTimer(1500);
+                      setRunning(!running);
+                    }}
                   >
                     {running ? <Pause size={16} /> : <Play size={16} />}{" "}
                     {running ? "Pausar" : "Empezar 25 minutos"}
@@ -1042,6 +1080,7 @@ function App() {
         <Toast
           message={useStore((s) => s.toast)}
           onUndo={useStore((s) => s.undo)}
+          canUndo={useStore((s) => s.toastUndo && s.past.length > 0)}
           onClose={clearToast}
         />
         {!online && (
@@ -1269,7 +1308,7 @@ function ColumnDialog({
           <button className="primary full">Guardar columna</button>
         </form>
         {column &&
-          board.columns.length > 1 &&
+          board.columns.length > 2 &&
           !isLast &&
           (deleting ? (
             <div className="confirm-box">
@@ -1326,11 +1365,7 @@ function TeamDialog({ board, onClose }: { board: Board; onClose: () => void }) {
               </span>
               <button
                 className="text-button"
-                onClick={() =>
-                  commit((d) => {
-                    d.currentUser = m.id;
-                  }, `Ahora estás viendo el espacio como ${m.name}`)
-                }
+                onClick={() => useStore.getState().setCurrentUser(m.id)}
               >
                 {m.id === data.currentUser ? "Eres tú" : "Ver como"}
               </button>
@@ -1419,9 +1454,7 @@ function SettingsDialog({
   const commit = useStore((s) => s.commit);
   const notify = useStore((s) => s.notify);
   const user = data.members.find((m) => m.id === data.currentUser)!;
-  const [sound, setSound] = useState(
-    localStorage.getItem("orbita:sound") === "true",
-  );
+  const [sound, setSound] = useState(readPreference("orbita:sound") === "true");
   const [deleting, setDeleting] = useState(false);
   const [importText, setImportText] = useState("");
   function member(p: Partial<Member>) {
@@ -1519,7 +1552,7 @@ function SettingsDialog({
             className={`toggle ${sound ? "on" : ""}`}
             onClick={() => {
               setSound(!sound);
-              localStorage.setItem("orbita:sound", String(!sound));
+              writePreference("orbita:sound", String(!sound));
             }}
           >
             <i />
@@ -1591,6 +1624,23 @@ function SettingsDialog({
         </div>
         <hr />
         <h3>Tus datos, contigo</h3>
+        {getRecoveryData() && (
+          <button
+            className="secondary full"
+            onClick={() => {
+              const url = URL.createObjectURL(
+                new Blob([getRecoveryData()!], { type: "application/json" }),
+              );
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = "orbita-recuperacion.json";
+              a.click();
+              setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }}
+          >
+            Descargar datos de recuperación
+          </button>
+        )}
         <button className="secondary full" onClick={exportData}>
           <ArrowDownToLine size={15} /> Exportar copia del espacio
         </button>
@@ -1601,49 +1651,13 @@ function SettingsDialog({
             accept="application/json,.json"
             onChange={async (e) => {
               const f = e.target.files?.[0];
+              e.target.value = "";
+              setImportText("");
               if (!f) return;
               try {
                 const text = await f.text();
                 const parsed = JSON.parse(text);
-                if (
-                  parsed.version !== 1 ||
-                  !parsed.boards?.length ||
-                  !Array.isArray(parsed.members) ||
-                  !parsed.members.length ||
-                  !Array.isArray(parsed.tasks) ||
-                  !Array.isArray(parsed.activities) ||
-                  !parsed.members.some(
-                    (m: Member) => m.id === parsed.currentUser,
-                  ) ||
-                  !Array.isArray(parsed.focusDays)
-                )
-                  throw Error();
-                for (const b of parsed.boards)
-                  if (
-                    !b.id ||
-                    !b.name ||
-                    !Array.isArray(b.columns) ||
-                    !b.columns.length ||
-                    !Array.isArray(b.members)
-                  )
-                    throw Error();
-                for (const t of parsed.tasks)
-                  if (
-                    !t.id ||
-                    typeof t.title !== "string" ||
-                    !Array.isArray(t.tags) ||
-                    !Array.isArray(t.checklist) ||
-                    !Array.isArray(t.comments) ||
-                    !Array.isArray(t.attachments) ||
-                    !Array.isArray(t.focus) ||
-                    !t.reactions ||
-                    !parsed.boards.some(
-                      (b: Board) =>
-                        b.id === t.boardId &&
-                        b.columns.some((c) => c.id === t.columnId),
-                    )
-                  )
-                    throw Error();
+                if (!isData(parsed)) throw Error();
                 setImportText(text);
               } catch {
                 notify("Ese archivo no es una copia válida de Órbita.");

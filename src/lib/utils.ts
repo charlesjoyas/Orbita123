@@ -1,5 +1,22 @@
 import type { Member, Priority, Task } from "../types";
-export const uid = () => crypto.randomUUID();
+export const uid = () =>
+  typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : `orbita-${Date.now().toString(36)}-${Array.from(crypto.getRandomValues(new Uint32Array(3)), (n) => n.toString(36)).join("")}`;
+export function isValidDue(value: string) {
+  if (!value) return true;
+  if (!/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2})?$/.test(value)) return false;
+  const date = new Date(value.slice(0, 10) + "T12:00:00");
+  if (
+    !Number.isFinite(date.getTime()) ||
+    localDate(date) !== value.slice(0, 10)
+  )
+    return false;
+  return (
+    value.length === 10 ||
+    (Number(value.slice(11, 13)) < 24 && Number(value.slice(14, 16)) < 60)
+  );
+}
 export function localDate(date = new Date()) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
@@ -13,7 +30,7 @@ export const priorityRank: Record<Priority, number> = {
 export const isLate = (task: Task) =>
   !!task.due && task.due.slice(0, 10) < today() && !task.completedAt;
 export function dueLabel(due: string) {
-  if (!due) return "";
+  if (!due || !isValidDue(due)) return "";
   const d = due.slice(0, 10);
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -27,6 +44,7 @@ export function dueLabel(due: string) {
         });
 }
 export function nextDue(due: string, recurrence: Task["recurrence"]) {
+  if (!isValidDue(due)) due = "";
   const d = new Date(`${(due || today()).slice(0, 10)}T12:00:00`);
   if (recurrence === "mensual") {
     const day = d.getDate();
@@ -65,7 +83,7 @@ export function parseQuick(
   title = title.replace(/#([\p{L}\d_-]+)/gu, (_, tag: string) => {
     if (["baja", "media", "alta", "urgente"].includes(tag.toLowerCase()))
       priority = tag.toLowerCase() as Priority;
-    else tags.push(tag);
+    else if (!tags.includes(tag)) tags.push(tag);
     return "";
   });
   if (/\b(mañana|hoy)\b/i.test(title)) {
@@ -75,16 +93,28 @@ export function parseQuick(
     title = title.replace(/\b(mañana|hoy)\b/gi, "");
   }
   const iso = title.match(/\b(\d{4}-\d{2}-\d{2})\b/);
-  if (iso) {
+  if (iso && isValidDue(iso[1])) {
     due = iso[1];
     title = title.replace(iso[0], "");
   }
   const time = title.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i);
-  if (time) {
+  if (
+    time &&
+    Number(time[1]) >= 1 &&
+    Number(time[1]) <= 12 &&
+    Number(time[2] || 0) < 60
+  ) {
     let h = Number(time[1]) % 12;
     if (time[3].toLowerCase() === "pm") h += 12;
     due = `${due || today()}T${String(h).padStart(2, "0")}:${time[2] || "00"}`;
     title = title.replace(time[0], "");
+  }
+  if (!time) {
+    const clock = title.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
+    if (clock) {
+      due = `${due || today()}T${clock[1].padStart(2, "0")}:${clock[2]}`;
+      title = title.replace(clock[0], "");
+    }
   }
   return {
     title: title.replace(/\s+/g, " ").trim(),

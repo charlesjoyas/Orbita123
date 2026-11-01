@@ -8,11 +8,15 @@ export default function QuickAdd({
   columnId,
   compact = false,
   focusKey = 0,
+  onCreated,
+  onRequestCreate,
 }: {
   boardId: string;
   columnId: string;
   compact?: boolean;
   focusKey?: number;
+  onCreated?: (id: string) => void;
+  onRequestCreate?: () => void;
 }) {
   const [value, setValue] = useState("");
   const input = useRef<HTMLInputElement>(null);
@@ -28,15 +32,24 @@ export default function QuickAdd({
       onSubmit={(e) => {
         e.preventDefault();
         if (!parsed.title) return;
-        add(boardId, columnId, parsed.title, parsed);
+        const id = add(boardId, columnId, parsed.title, parsed);
+        if (!id) return;
         setValue("");
+        onCreated?.(id);
         input.current?.focus();
       }}
     >
       <div className="quick-input">
-        <span className="quick-plus">
+        <button
+          className="quick-plus"
+          type="button"
+          aria-label="Escribir una nueva tarea"
+          onClick={() =>
+            onRequestCreate ? onRequestCreate() : input.current?.focus()
+          }
+        >
           <Plus size={20} />
-        </span>
+        </button>
         <input
           ref={input}
           aria-label="Crear tarea rápidamente"
@@ -48,6 +61,10 @@ export default function QuickAdd({
               : "Una idea, una tarea… ¿qué hacemos hoy?"
           }
           maxLength={240}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && e.nativeEvent.isComposing)
+              e.preventDefault();
+          }}
         />
         {!compact && (
           <span className="quick-hint">
@@ -60,6 +77,7 @@ export default function QuickAdd({
           aria-label="Crear tarea"
           disabled={!parsed.title}
         >
+          <span className="quick-submit-label">Añadir</span>
           <ArrowUp size={17} />
         </button>
       </div>

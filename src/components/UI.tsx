@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ReactNode } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useIsPresent } from "framer-motion";
 import { X } from "lucide-react";
 import type { Member } from "../types";
 export function Avatar({
@@ -33,6 +33,7 @@ export function Modal({
   onClose: () => void;
   wide?: boolean;
 }) {
+  const isPresent = useIsPresent();
   const ref = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
@@ -76,6 +77,7 @@ export function Modal({
   return (
     <motion.div
       className="modal-backdrop"
+      style={{ pointerEvents: isPresent ? "auto" : "none" }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -127,10 +129,12 @@ export function Toast({
   message,
   onUndo,
   onClose,
+  canUndo = true,
 }: {
   message: string;
   onUndo: () => void;
   onClose: () => void;
+  canUndo?: boolean;
 }) {
   useEffect(() => {
     if (!message) return;
@@ -149,7 +153,7 @@ export function Toast({
         >
           <span>✦</span>
           <p>{message}</p>
-          <button onClick={onUndo}>Deshacer</button>
+          {canUndo && <button onClick={onUndo}>Deshacer</button>}
           <button onClick={onClose} aria-label="Cerrar aviso">
             <X size={15} />
           </button>

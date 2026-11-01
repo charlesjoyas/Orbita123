@@ -28,7 +28,6 @@ import TaskCard from "./TaskCard";
 import { Empty } from "./UI";
 import QuickAdd from "./QuickAdd";
 import { useStore } from "../store";
-import { uid } from "../lib/utils";
 function BoardColumn({
   column,
   tasks,
@@ -57,6 +56,7 @@ function BoardColumn({
   const finished = column.id === board.columns.at(-1)?.id;
   return (
     <section
+      data-column-id={column.id}
       ref={sortable.setNodeRef}
       className={`board-column ${isOver ? "over" : ""}`}
       style={
@@ -146,6 +146,7 @@ export default function BoardView({
   onComplete,
   onEditColumn,
   onAddColumn,
+  onTaskCreated,
 }: {
   board: Board;
   tasks: Task[];
@@ -153,10 +154,12 @@ export default function BoardView({
   onComplete: (id: string) => void;
   onEditColumn: (c: Column) => void;
   onAddColumn: () => void;
+  onTaskCreated: (id: string) => void;
 }) {
   const [drag, setDrag] = useState<Task | null>(null);
   const [quickColumn, setQuickColumn] = useState("");
   const commit = useStore((s) => s.commit);
+  const moveTask = useStore((s) => s.moveTask);
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, {
@@ -174,7 +177,11 @@ export default function BoardView({
       commit((d) => {
         const b = d.boards.find((b) => b.id === board.id)!;
         const from = b.columns.findIndex((c) => c.id === e.active.id);
-        const to = b.columns.findIndex((c) => c.id === e.over!.id);
+        const destination =
+          e.over!.data.current?.columnId ||
+          e.over!.data.current?.task?.columnId ||
+          String(e.over!.id).replace(/^drop-/, "");
+        const to = b.columns.findIndex((c) => c.id === destination);
         if (from >= 0 && to >= 0 && from < b.columns.length - 1)
           b.columns = arrayMove(
             b.columns,
@@ -194,27 +201,7 @@ export default function BoardView({
     const moving = tasks.find((t) => t.id === e.active.id);
     if (!moving) return;
     const finish = columnId === board.columns.at(-1)?.id && !moving.completedAt;
-    commit((d) => {
-      const t = d.tasks.find((t) => t.id === moving.id)!;
-      const changed = t.columnId !== columnId;
-      t.columnId = String(columnId);
-      if (changed) t.movedAt = new Date().toISOString();
-      if (columnId !== board.columns.at(-1)?.id) t.completedAt = undefined;
-      const from = d.tasks.findIndex((t) => t.id === moving.id);
-      const to = targetTask
-        ? d.tasks.findIndex((t) => t.id === targetTask.id)
-        : d.tasks.length - 1;
-      d.tasks = arrayMove(d.tasks, from, to);
-      if (changed)
-        d.activities.unshift({
-          id: uid(),
-          actor: d.currentUser,
-          taskId: t.id,
-          text: `movió «${t.title}» a ${board.columns.find((c) => c.id === columnId)?.name}`,
-          at: new Date().toISOString(),
-          unread: true,
-        });
-    }, "Tarea movida");
+    moveTask(moving.id, String(columnId), targetTask?.id);
     if (finish) onComplete(moving.id);
   }
   if (!board.columns.length)
@@ -292,10 +279,11 @@ export default function BoardView({
             boardId={board.id}
             columnId={quickColumn}
             focusKey={1}
+            onCreated={onTaskCreated}
             compact
           />
           <button className="text-button" onClick={() => setQuickColumn("")}>
-            Listo
+            Cerrar
           </button>
         </div>
       )}

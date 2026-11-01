@@ -757,6 +757,11 @@ kbd {
   padding: 0 4px;
 }
 .quick-submit {
+  width: auto !important;
+  min-width: 30px;
+  padding: 0 8px;
+  display: flex !important;
+  gap: 5px;
   height: 27px;
   width: 28px;
   display: grid;
@@ -764,6 +769,15 @@ kbd {
   background: #a28ac7;
   color: #fff;
   border-radius: 8px;
+}
+.quick-submit-label {
+  font-size: 10px;
+  white-space: nowrap;
+}
+@media (max-width: 400px) {
+  .quick-submit-label {
+    display: none;
+  }
 }
 .quick-submit:disabled {
   background: #eee8f6;
@@ -2192,6 +2206,7 @@ input[type="color"] {
 .team-grid > section > .task-card {
   margin-bottom: 14px;
 }
+.team-grid>section>.task-shell{margin-bottom:14px}
 .member-heading {
   display: flex;
   gap: 10px;
