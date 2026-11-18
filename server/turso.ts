@@ -1,8 +1,8 @@
-import { createClient, type Client } from "@libsql/client/web";
+import { createClient } from "@libsql/client/web";
 import { schema, statement, type Database, type Query, type Row } from "./db.ts";
 import { prepareDatabase } from "./api.ts";
 
-function asQuery(connection: Pick<Client, "execute">): Query {
+function asQuery(connection: Pick<ReturnType<typeof createClient>, "execute">): Query {
   return {
     async all<T extends Row>(sql: string, params?: unknown[]) {
       const result = await connection.execute(statement(sql, params));
