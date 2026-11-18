@@ -130,6 +130,32 @@ async function preserveAttribution(
 async function users(q: Query) {
   return q.all<User>("SELECT * FROM orbita_users ORDER BY created_at,id");
 }
+async function insertTeamUser(
+  q: Query,
+  { email, name, passwordHash, role }: { email: string; name: string; passwordHash: string; role: Role },
+) {
+  const people = await users(q);
+  assert(!people.some((person) => person.email === email), 409, "Ya existe una cuenta con ese correo.");
+  assert(people.length < 10, 409, "Este espacio tiene un máximo de 10 usuarios.");
+  const user: User = {
+    id: randomUUID(),
+    email,
+    password_hash: passwordHash,
+    name: name.trim(),
+    emoji: "🦊",
+    color: "#7aa8b1",
+    status: "disponible",
+    role,
+    active: 1,
+    created_at: new Date().toISOString(),
+  };
+  await q.run(
+    "INSERT INTO orbita_users(id,email,password_hash,name,emoji,color,status,role,active,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
+    Object.values(user),
+  );
+  await q.run("UPDATE orbita_state SET revision=revision+1 WHERE slot='main'");
+  return user;
+}
 async function state(q: Query, user: User) {
   const [row] = await q.all<Stored>(
     "SELECT * FROM orbita_state WHERE slot='main'",
@@ -475,39 +501,15 @@ export function createApi(
             [hashToken(body.token as string), Date.now()],
           );
           assert(invite, 400, "La invitación caducó o ya se utilizó.");
-          const people = await users(q);
-          assert(
-            people.length < 10,
-            409,
-            "Este espacio tiene un máximo de 10 usuarios.",
-          );
-          assert(
-            !people.some((p) => p.email === invite.email),
-            409,
-            "Ya existe una cuenta con ese correo. Inicia sesión.",
-          );
-          const u: User = {
-            id: randomUUID(),
+          const u = await insertTeamUser(q, {
             email: String(invite.email),
-            password_hash: encoded,
-            name: (body.name as string).trim(),
-            emoji: "🦊",
-            color: "#7aa8b1",
-            status: "disponible",
+            passwordHash: encoded,
+            name: body.name as string,
             role: invite.role as Role,
-            active: 1,
-            created_at: new Date().toISOString(),
-          };
-          await q.run(
-            "INSERT INTO orbita_users(id,email,password_hash,name,emoji,color,status,role,active,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
-            Object.values(u),
-          );
+          });
           await q.run(
             "UPDATE orbita_invites SET used_at=$1 WHERE token_hash=$2",
             [Date.now(), hashToken(body.token as string)],
-          );
-          await q.run(
-            "UPDATE orbita_state SET revision=revision+1 WHERE slot='main'",
           );
           return { user: u, snapshot: await state(q, u), sessionCookie: await startSession(req, u, q) };
         });
@@ -610,6 +612,25 @@ export function createApi(
           await requireSession(req, q, true);
           return json({ users: (await users(q)).map(profile) });
         }, "read");
+      }
+      if (route === "/api/users" && req.method === "POST") {
+        assert(current.role === "admin", 403, "Solo un administrador puede crear cuentas.");
+        const { name, password, role } = body;
+        const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+        assert(
+          nameValid(name) && validEmail(email) && validPassword(password) &&
+            typeof role === "string" && roleNames.includes(role),
+          400,
+          "Escribe un nombre, un correo válido, un rol y una contraseña de 12 a 128 caracteres.",
+        );
+        const passwordHash = await usePassword(() => hashPassword(password));
+        const user = await db.transaction(async (q) => {
+          await requireSession(req, q, true);
+          const created = await insertTeamUser(q, { email, name, passwordHash, role: role as Role });
+          await q.run("DELETE FROM orbita_invites WHERE email=$1 AND used_at IS NULL", [email]);
+          return created;
+        });
+        return json({ user: profile(user) }, 201);
       }
       if (route === "/api/invites" && req.method === "POST") {
         assert(

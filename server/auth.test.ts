@@ -73,6 +73,31 @@ beforeAll(async () => {
 }, 15000);
 afterAll(() => db.close());
 describe("Cuentas, sesiones y permisos del servidor", () => {
+  it("el administrador crea una cuenta que puede entrar sin invitación", async () => {
+    const input = {
+      email: " Manual@orbita.test ", name: "Cuenta manual", password,
+      role: "member",
+    };
+    const before = await (await call("state", "GET", undefined, admin)).json();
+    const invitation = await invite("manual@orbita.test", "viewer");
+    expect((await call("users", "POST", input)).status).toBe(401);
+    expect((await call("users", "POST", input, editor)).status).toBe(403);
+    expect((await call("users", "POST", { ...input, role: "owner" }, admin)).status).toBe(400);
+    const created = await call("users", "POST", input, admin);
+    expect(created.status).toBe(201);
+    expect(created.headers.get("set-cookie")).toBeNull();
+    const result = await created.json();
+    expect(result.user).toMatchObject({ email: "manual@orbita.test", role: "member", active: true });
+    expect(result.user).not.toHaveProperty("password_hash");
+    expect((await call("users", "POST", input, admin)).status).toBe(409);
+    expect((await call("invite?token=" + invitation)).status).toBe(404);
+    const login = await call("login", "POST", { email: result.user.email, password });
+    expect(login.status).toBe(200);
+    const after = await login.json();
+    expect(after.user.id).toBe(result.user.id);
+    expect(after.revision).toBe(before.revision + 1);
+    expect(after.data.boards[0].members).toContain(result.user.id);
+  });
   it("guarda hashes y no almacena contraseñas ni tokens de sesión en claro", async () => {
     const [user] = await db.all(
       "SELECT password_hash FROM orbita_users WHERE email=$1",

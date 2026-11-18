@@ -10,7 +10,9 @@ La primera entrada permite crear tu cuenta administradora. Puedes conservar los 
 
 SQLite guarda los datos en `.data/orbita.sqlite`, una carpeta excluida de Git. No se entregan contraseñas predeterminadas ni usuarios de prueba dentro de esa base. La comprobación del navegador usa una base distinta en `.sites-runtime/`.
 
-Después de entrar, abre **Nuestro equipo → Crear usuario por invitación**. Escribe el correo y el rol y comparte el enlace directamente con esa persona. El enlace caduca en siete días y sirve una vez. Generar otro para el mismo correo invalida el anterior. Si se desactiva a quien invitó o pierde su rol de administrador, sus invitaciones pendientes se revocan. El espacio tiene un máximo de 10 cuentas.
+En **Nuestro equipo → Añadir al equipo**, elige **Crear cuenta manualmente** y escribe el nombre, el correo, el rol y una contraseña inicial. La cuenta puede iniciar sesión de inmediato. Comparte la contraseña en privado para que la persona la cambie después desde su perfil.
+
+La opción **Crear enlace de invitación** permite que la persona elija su contraseña al aceptar el enlace. Cada enlace caduca en siete días y sirve una vez. Generar otro para el mismo correo o crear la cuenta manualmente invalida el enlace anterior. Si se desactiva a quien invitó o pierde su rol de administrador, sus invitaciones pendientes se revocan. El espacio tiene un máximo de 10 cuentas.
 
 ## Roles del espacio
 

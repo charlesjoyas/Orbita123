@@ -15,8 +15,12 @@ export default function TeamAccounts({ onClose }: { onClose: () => void }) {
   const admin = current.role === "admin";
   const members = useStore((s) => s.data.members);
   const [users, setUsers] = useState<Account[]>([]);
+  const [mode, setMode] = useState<"direct" | "invite">("direct");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [role, setRole] = useState<Role>("member");
+  const [created, setCreated] = useState("");
   const [link, setLink] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -116,37 +120,65 @@ export default function TeamAccounts({ onClose }: { onClose: () => void }) {
           <>
             <hr />
             <h3>
-              <Plus size={17} /> Crear usuario por invitación
+              <Plus size={17} /> Añadir al equipo
             </h3>
-            <p className="small-note">
-              La persona elige su contraseña al abrir el enlace. Caduca en 7
-              días y se puede usar una sola vez.
-            </p>
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
+                if (busy) return;
                 setBusy(true);
                 setError("");
                 setLink("");
                 setCopied(false);
+                setCreated("");
                 try {
-                  const result = await api<{ url: string }>("invites", "POST", {
-                    email,
-                    role,
-                  });
-                  setLink(result.url);
+                  if (mode === "direct") {
+                    const { user } = await api<{ user: Account }>("users", "POST", {
+                      name, email, password, role,
+                    });
+                    setUsers((list) => [...list.filter((item) => item.id !== user.id), user]);
+                    setCreated(`${user.name} ya puede iniciar sesión con ${user.email} y la contraseña inicial.`);
+                    setName("");
+                    setPassword("");
+                  } else {
+                    const { url } = await api<{ url: string }>("invites", "POST", { email, role });
+                    setLink(url);
+                  }
                   setEmail("");
                 } catch (e) {
                   setError(
                     e instanceof Error
                       ? e.message
-                      : "No pudimos crear la invitación.",
+                      : "No pudimos completar el alta.",
                   );
                 } finally {
                   setBusy(false);
                 }
               }}
             >
+              <label>
+                Forma de alta
+                <select
+                  value={mode}
+                  disabled={busy}
+                  onChange={(e) => {
+                    setMode(e.target.value === "invite" ? "invite" : "direct");
+                    setPassword("");
+                    setCreated("");
+                    setLink("");
+                    setError("");
+                  }}
+                >
+                  <option value="direct">Crear cuenta manualmente</option>
+                  <option value="invite">Crear enlace de invitación</option>
+                </select>
+              </label>
+              {mode === "direct" && (
+                <label>
+                  Nombre de la persona
+                  <input required maxLength={40} value={name} onChange={(e) => setName(e.target.value)} />
+                </label>
+              )}
               <label>
                 Correo de la persona
                 <input
@@ -157,6 +189,21 @@ export default function TeamAccounts({ onClose }: { onClose: () => void }) {
                   placeholder="su@correo.com"
                 />
               </label>
+              {mode === "direct" && (
+                <label>
+                  Contraseña inicial
+                  <input
+                    type="password"
+                    required
+                    minLength={12}
+                    maxLength={128}
+                    autoComplete="new-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    aria-describedby="initial-password-help"
+                  />
+                </label>
+              )}
               <label>
                 Su rol
                 <select
@@ -172,11 +219,17 @@ export default function TeamAccounts({ onClose }: { onClose: () => void }) {
                   </option>
                 </select>
               </label>
+              {mode === "direct" ? (
+                <p id="initial-password-help" className="small-note">Usa al menos 12 caracteres y comparte la contraseña en privado. La persona puede cambiarla desde su perfil.</p>
+              ) : (
+                <p className="small-note">El enlace caduca en 7 días y se puede usar una sola vez.</p>
+              )}
               <button className="primary full" disabled={busy}>
                 <UserRoundCheck size={16} />
-                {busy ? "Creando…" : "Crear invitación"}
+                {busy ? "Creando…" : mode === "direct" ? "Crear cuenta" : "Crear invitación"}
               </button>
             </form>
+            {created && <p role="status">{created}</p>}
             {link && (
               <div className="invite-result" role="status">
                 <strong>Su lugar ya está reservado ✨</strong>
