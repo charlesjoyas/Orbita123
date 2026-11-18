@@ -22,6 +22,13 @@ export function Avatar({
     </span>
   );
 }
+export function AvatarStack({ people }: { people: Member[] }) {
+  return (
+    <div className="avatar-stack" aria-label={people.map((member) => member.name).join(", ") || "Sin asignar"}>
+      {people.map((member) => <Avatar key={member.id} member={member} size="small" />)}
+    </div>
+  );
+}
 export function Modal({
   children,
   title,

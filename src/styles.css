@@ -112,7 +112,7 @@ h3 {
   font-weight: 550;
 }
 small {
-  font-size: 11px;
+  font-size: 12px;
 }
 svg {
   flex-shrink: 0;
@@ -201,12 +201,12 @@ kbd {
   border-radius: 8px;
 }
 .workspace-switch strong {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 650;
 }
 .workspace-switch small {
   display: block;
-  font-size: 8px;
+  font-size: 12px;
   color: var(--muted);
   margin-top: 4px;
 }
@@ -243,7 +243,7 @@ kbd {
   color: var(--purple);
   padding: 2px 6px;
   border-radius: 5px;
-  font-size: 10px;
+  font-size: 12px;
 }
 .nav-heart {
   margin-left: auto;
@@ -258,7 +258,7 @@ kbd {
   height: 5px;
 }
 .sidebar-label {
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 650;
   letter-spacing: 1.25px;
   color: #a09aaa;
@@ -284,7 +284,7 @@ kbd {
   gap: 9px;
   padding: 12px 10px;
   border-radius: 9px;
-  font-size: 11px;
+  font-size: 12px;
   text-align: left;
 }
 .boards-nav button > span:nth-child(2) {
@@ -309,7 +309,7 @@ kbd {
 }
 .boards-nav .new-board {
   color: #a19ba9;
-  font-size: 11px;
+  font-size: 12px;
 }
 .team-label {
   margin-top: 32px;
@@ -327,15 +327,15 @@ kbd {
   padding: 5px 10px;
 }
 .sidebar-members > button > span:nth-child(2) {
-  font-size: 11px;
+  font-size: 12px;
 }
 .sidebar-members small {
-  font-size: 9px;
+  font-size: 12px;
   color: var(--muted);
 }
 .sidebar-members > button > span:nth-child(2) > small:last-child {
   display: block;
-  font-size: 9px;
+  font-size: 12px;
   margin-top: 3px;
 }
 .sidebar-members > button > i {
@@ -407,7 +407,7 @@ kbd {
   font-weight: 500;
 }
 .weekly-card p {
-  font-size: 9px;
+  font-size: 12px;
   margin: 8px 0 11px;
   color: #8d829c;
 }
@@ -428,7 +428,7 @@ kbd {
   align-items: center;
   justify-content: space-between;
   color: #a69bb3;
-  font-size: 8px;
+  font-size: 12px;
   margin-top: 9px;
 }
 .sidebar-help {
@@ -436,7 +436,7 @@ kbd {
   align-items: center;
   gap: 8px;
   color: #948d9e;
-  font-size: 10px;
+  font-size: 12px;
   margin: 20px 4px;
 }
 .sidebar-help kbd {
@@ -456,11 +456,11 @@ kbd {
   text-align: left;
 }
 .sidebar-profile > button > span:nth-child(2) {
-  font-size: 11px;
+  font-size: 12px;
 }
 .sidebar-profile small {
   display: block;
-  font-size: 9px;
+  font-size: 12px;
   color: #a49baa;
   margin-top: 3px;
 }
@@ -492,7 +492,7 @@ kbd {
   display: flex;
   gap: 14px;
   align-items: center;
-  font-size: 10px;
+  font-size: 12px;
   color: #aaa1b2;
 }
 .breadcrumb strong {
@@ -509,15 +509,15 @@ kbd {
   gap: 9px;
   align-items: center;
   color: #a49aac;
-  font-size: 10px;
+  font-size: 12px;
 }
 .command-shortcut kbd {
-  font-size: 9px;
+  font-size: 12px;
   margin-left: 10px;
   background: var(--surface);
 }
 .local-status {
-  font-size: 8px;
+  font-size: 12px;
   color: #a39ba9;
   display: flex;
   align-items: center;
@@ -557,11 +557,11 @@ kbd {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: 12px;
   color: #8d819d;
 }
 .greeting > span:last-child {
-  font-size: 10px;
+  font-size: 12px;
   text-transform: capitalize;
   color: #aaa0b4;
 }
@@ -597,7 +597,7 @@ kbd {
 }
 .board-subtitle {
   color: #9a90a5;
-  font-size: 11px;
+  font-size: 12px;
   margin-top: 11px;
 }
 .board-team {
@@ -628,7 +628,7 @@ kbd {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 9px;
+  font-size: 12px;
   color: #92839f;
   padding: 0;
 }
@@ -649,7 +649,7 @@ kbd {
   align-items: center;
   gap: 9px;
   padding: 11px 8px;
-  font-size: 11px;
+  font-size: 12px;
   width: 100%;
   text-align: left;
   border-radius: 7px;
@@ -667,7 +667,7 @@ kbd {
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 9px;
+  font-size: 12px;
   color: #9b91a7;
 }
 .progress-symbol {
@@ -698,7 +698,7 @@ kbd {
   border-radius: 9px;
 }
 .progress-label b {
-  font-size: 9px;
+  font-size: 12px;
   color: #a696b7;
   font-weight: 450;
 }
@@ -706,7 +706,7 @@ kbd {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 9px;
+  font-size: 12px;
   color: #ae99a6;
 }
 .streak-mini svg {
@@ -741,13 +741,13 @@ kbd {
   background: none;
   box-shadow: none !important;
   flex: 1;
-  font-size: 11px;
+  font-size: 12px;
 }
 .quick-input > input::placeholder {
   color: #aaa0b5;
 }
 .quick-hint {
-  font-size: 9px;
+  font-size: 12px;
   color: #b7adbf;
   white-space: nowrap;
   margin: 0 10px;
@@ -771,7 +771,7 @@ kbd {
   border-radius: 8px;
 }
 .quick-submit-label {
-  font-size: 10px;
+  font-size: 12px;
   white-space: nowrap;
 }
 @media (max-width: 400px) {
@@ -788,7 +788,7 @@ kbd {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 10px;
+  font-size: 12px;
   overflow: hidden;
   padding: 0 16px 10px;
   color: #a18ac0;
@@ -800,7 +800,7 @@ kbd {
 }
 .quick-chips small {
   margin-left: auto;
-  font-size: 9px;
+  font-size: 12px;
 }
 .view-toolbar {
   display: flex;
@@ -818,7 +818,7 @@ kbd {
   align-self: stretch;
 }
 .view-tabs button {
-  font-size: 10px;
+  font-size: 12px;
   display: flex;
   align-items: center;
   gap: 7px;
@@ -858,7 +858,7 @@ kbd {
   border: 0;
   background: none;
   box-shadow: none;
-  font-size: 9px;
+  font-size: 12px;
 }
 .board-search button {
   padding: 1px;
@@ -868,7 +868,7 @@ kbd {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 10px;
+  font-size: 12px;
   color: #9b8da7;
   border: 1px solid #e6deef;
   border-radius: 7px;
@@ -879,7 +879,7 @@ kbd {
   color: var(--purple);
 }
 .filter-button b {
-  font-size: 9px;
+  font-size: 12px;
 }
 .filter-panel {
   display: flex;
@@ -891,11 +891,11 @@ kbd {
 }
 .filter-panel label {
   flex: 1;
-  font-size: 10px;
+  font-size: 12px;
   min-width: 110px;
 }
 .filter-panel select {
-  font-size: 11px;
+  font-size: 12px;
   padding: 7px;
 }
 .kanban {
@@ -936,7 +936,7 @@ kbd {
   font-weight: 500;
 }
 .column-count {
-  font-size: 9px;
+  font-size: 12px;
   border-radius: 5px;
   color: #9e92ac;
   background: #eae4f055;
@@ -979,7 +979,7 @@ kbd {
   padding: 1px 1px 10px;
 }
 .wip {
-  font-size: 9px;
+  font-size: 12px;
   color: #ae9169;
   display: block;
   margin-bottom: 12px;
@@ -1020,7 +1020,7 @@ kbd {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  font-size: 8px;
+  font-size: 12px;
   padding: 3px 7px;
   border-radius: 5px;
   font-style: normal;
@@ -1114,7 +1114,7 @@ kbd {
   align-items: center;
   gap: 8px;
   color: #b0a3ba;
-  font-size: 8px;
+  font-size: 12px;
 }
 .card-meta > span {
   display: flex;
@@ -1174,19 +1174,19 @@ kbd {
   border-radius: 5px;
 }
 .card-progress > span {
-  font-size: 8px;
+  font-size: 12px;
   color: #ad9cbb;
 }
 .blocked {
   display: flex;
   gap: 4px;
   align-items: center;
-  font-size: 9px;
+  font-size: 12px;
   color: #b98c78;
   margin-top: 9px;
 }
 .stale {
-  font-size: 9px;
+  font-size: 12px;
   margin-top: 7px;
   color: #b49e83;
 }
@@ -1256,7 +1256,7 @@ kbd {
   text-align: center;
   left: 0;
   right: 0;
-  font-size: 7px;
+  font-size: 12px;
   color: #8d72aa;
   letter-spacing: 1.2px;
 }
@@ -1313,7 +1313,7 @@ kbd {
 }
 .peach > small {
   color: #ab8e7e;
-  font-size: 6px;
+  font-size: 12px;
   letter-spacing: 0.8px;
 }
 .card-cover.mint {
@@ -1354,7 +1354,7 @@ kbd {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 10px;
+  font-size: 12px;
   color: #b2a5bf;
   padding: 7px;
 }
@@ -1376,7 +1376,7 @@ kbd {
   border-radius: 12px;
   padding: 22px 10px;
   text-align: center;
-  font-size: 10px;
+  font-size: 12px;
   color: #b0a1bf;
 }
 .inline-composer {
@@ -1395,7 +1395,7 @@ kbd {
   gap: 10px;
 }
 .inline-composer > span {
-  font-size: 10px;
+  font-size: 12px;
   white-space: nowrap;
 }
 .inline-composer .quick-add {
@@ -1410,7 +1410,7 @@ kbd {
   justify-content: space-between;
   align-items: center;
   color: #b4a6c0;
-  font-size: 9px;
+  font-size: 12px;
   margin-top: 8px;
   border-top: 1px dashed #e7deee;
   padding-top: 18px;
@@ -1428,7 +1428,7 @@ kbd {
   display: flex;
   gap: 5px;
   align-items: center;
-  font-size: 8px;
+  font-size: 12px;
   color: #b4a6c0;
 }
 .bg-sand {
@@ -1479,7 +1479,7 @@ kbd {
   z-index: 2;
 }
 .eyebrow {
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 1.2px;
   font-weight: 600;
   color: #a292b1;
@@ -1511,7 +1511,7 @@ kbd {
   border-radius: 10px;
   background: #8268bb;
   color: white;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   padding: 12px 17px;
   display: inline-flex;
@@ -1532,7 +1532,7 @@ kbd {
   width: 100%;
 }
 .text-button {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--purple);
   padding: 7px;
 }
@@ -1568,7 +1568,7 @@ kbd {
   border-radius: 9px;
   padding: 11px 9px;
   color: #7e6c8d;
-  font-size: 10px;
+  font-size: 12px;
   border: 2px solid transparent;
   flex: 1;
 }
@@ -1592,7 +1592,7 @@ input[type="color"] {
   border: 1px solid var(--line);
   border-radius: 11px;
   color: #9a85b3;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.7;
   margin: 17px 0;
 }
@@ -1602,13 +1602,13 @@ input[type="color"] {
 }
 .info-note p {
   margin-top: 5px;
-  font-size: 11px;
+  font-size: 12px;
 }
 .confirm-box {
   border: 1px solid #ead8de;
   border-radius: 10px;
   padding: 12px;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.7;
   margin-top: 15px;
 }
@@ -1632,7 +1632,7 @@ input[type="color"] {
 .team-dialog-list small {
   display: block;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   margin-top: 4px;
 }
 .settings-dialog > label {
@@ -1654,7 +1654,7 @@ input[type="color"] {
   font-weight: 500;
 }
 .settings-profile > div > span {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   margin-top: 6px;
   display: block;
@@ -1665,7 +1665,7 @@ input[type="color"] {
   justify-content: space-between;
   padding: 17px 0;
   border-bottom: 1px solid var(--line);
-  font-size: 11px;
+  font-size: 12px;
 }
 .setting-toggle > span {
   display: flex;
@@ -1710,11 +1710,11 @@ input[type="color"] {
   justify-content: space-between;
   align-items: center;
   padding: 11px 0;
-  font-size: 11px;
+  font-size: 12px;
   border-bottom: 1px solid var(--line);
 }
 .shortcuts kbd {
-  font-size: 9px;
+  font-size: 12px;
 }
 .toast {
   position: fixed;
@@ -1732,7 +1732,7 @@ input[type="color"] {
   padding: 12px 15px;
   border-radius: 12px;
   z-index: 110;
-  font-size: 11px;
+  font-size: 12px;
 }
 .toast > span {
   color: #d2b9ef;
@@ -1742,7 +1742,7 @@ input[type="color"] {
   min-width: 120px;
 }
 .toast button {
-  font-size: 10px;
+  font-size: 12px;
   color: #dfc8fa;
   white-space: nowrap;
   display: flex;
@@ -1761,7 +1761,7 @@ input[type="color"] {
   font-size: 18px;
 }
 .empty p {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.8;
   color: var(--muted);
   margin-top: 10px;
@@ -1800,7 +1800,7 @@ input[type="color"] {
   margin: 17px 0 23px;
 }
 .detail-actions button {
-  font-size: 10px;
+  font-size: 12px;
   display: flex;
   gap: 5px;
   align-items: center;
@@ -1820,7 +1820,7 @@ input[type="color"] {
   margin-bottom: 22px;
 }
 .detail-grid label > span {
-  font-size: 10px;
+  font-size: 12px;
   display: flex;
   align-items: center;
   gap: 5px;
@@ -1829,21 +1829,21 @@ input[type="color"] {
 .detail-grid input,
 .detail-grid select {
   padding: 9px 8px;
-  font-size: 11px;
+  font-size: 12px;
   width: 100%;
   height: 38px;
 }
 .field-label {
   margin: 19px 0;
-  font-size: 11px;
+  font-size: 12px;
 }
 .field-label small {
   font-weight: 400;
-  font-size: 9px;
+  font-size: 12px;
   color: var(--muted);
 }
 .field-label input {
-  font-size: 11px;
+  font-size: 12px;
 }
 .description-input {
   font-size: 12px;
@@ -1853,7 +1853,7 @@ input[type="color"] {
 }
 .description-preview {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.8;
   margin-top: -9px;
 }
@@ -1870,7 +1870,7 @@ input[type="color"] {
   font-weight: 500;
 }
 .detail-section > h3 > span {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   margin-left: auto;
 }
@@ -1899,7 +1899,7 @@ input[type="color"] {
   gap: 8px;
   flex: 1;
   font-weight: 400;
-  font-size: 11px;
+  font-size: 12px;
 }
 .check-item input {
   accent-color: #a18ac3;
@@ -1932,10 +1932,10 @@ input[type="color"] {
   border: 0;
   box-shadow: none;
   padding: 4px 0;
-  font-size: 11px;
+  font-size: 12px;
 }
 .line-form button {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--purple);
   padding: 2px;
   display: flex;
@@ -1948,7 +1948,7 @@ input[type="color"] {
   padding: 10px;
   border-radius: 8px;
   background: var(--bg);
-  font-size: 11px;
+  font-size: 12px;
 }
 .attachment a {
   display: flex;
@@ -1965,7 +1965,7 @@ input[type="color"] {
   display: inline-flex;
   position: relative;
   color: var(--purple);
-  font-size: 10px;
+  font-size: 12px;
   border: 1px dashed #d5c8e5;
   border-radius: 8px;
   padding: 9px 13px;
@@ -1995,7 +1995,7 @@ input[type="color"] {
   border-color: #ba9bd7;
 }
 .reaction-row span {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--purple);
 }
 .reaction-row button:active {
@@ -2008,7 +2008,7 @@ input[type="color"] {
   padding-bottom: 12px;
 }
 .detail-tabs button {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   display: flex;
   align-items: center;
@@ -2027,11 +2027,11 @@ input[type="color"] {
   flex: 1;
 }
 .comment strong {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
 }
 .comment time {
-  font-size: 9px;
+  font-size: 12px;
   margin-left: 9px;
   color: var(--muted);
 }
@@ -2048,7 +2048,7 @@ input[type="color"] {
   gap: 5px;
 }
 .comment-reactions button {
-  font-size: 11px;
+  font-size: 12px;
   padding: 3px 5px;
   border-radius: 5px;
 }
@@ -2056,14 +2056,14 @@ input[type="color"] {
   background: var(--purple-light);
 }
 .task-history p {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.9;
   color: var(--muted);
   padding: 9px 0;
   border-bottom: 1px solid var(--line);
 }
 .task-history small {
-  font-size: 9px;
+  font-size: 12px;
 }
 .detail-footer {
   display: flex;
@@ -2076,7 +2076,7 @@ input[type="color"] {
   display: flex;
   gap: 6px;
   align-items: center;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--purple);
 }
 .pass-box {
@@ -2090,7 +2090,7 @@ input[type="color"] {
 }
 .pass-box label,
 .pass-box input {
-  font-size: 11px;
+  font-size: 12px;
 }
 .cards-grid {
   display: grid;
@@ -2112,7 +2112,7 @@ input[type="color"] {
   margin: 9px 0;
 }
 .day-hero p {
-  font-size: 11px;
+  font-size: 12px;
   color: #a190a8;
 }
 .streak {
@@ -2128,7 +2128,7 @@ input[type="color"] {
     sans-serif;
 }
 .streak span {
-  font-size: 9px;
+  font-size: 12px;
 }
 .focus-slots {
   display: grid;
@@ -2143,7 +2143,7 @@ input[type="color"] {
   padding: 16px;
   border-radius: 11px;
   color: #b7a5c8;
-  font-size: 10px;
+  font-size: 12px;
 }
 .focus-slots > div.filled {
   background: #efe9f7;
@@ -2152,7 +2152,7 @@ input[type="color"] {
 .focus-slots button {
   text-align: left;
   padding: 0;
-  font-size: 11px;
+  font-size: 12px;
   color: #957eaf;
 }
 .section-title {
@@ -2164,7 +2164,7 @@ input[type="color"] {
 }
 .section-title span {
   font-family: "DM Sans", sans-serif;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   font-weight: 400;
 }
@@ -2179,7 +2179,7 @@ input[type="color"] {
   font-size: 21px;
 }
 .team-summary p {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   margin-top: 8px;
 }
@@ -2197,7 +2197,7 @@ input[type="color"] {
 }
 .team-summary > small {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 .team-grid {
   display: grid;
@@ -2217,11 +2217,11 @@ input[type="color"] {
   font-size: 17px;
 }
 .member-heading small {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
 }
 .member-heading p {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   margin-top: 3px;
 }
@@ -2271,7 +2271,7 @@ input[type="color"] {
   font-weight: 600;
 }
 .activity-item time {
-  font-size: 9px;
+  font-size: 12px;
   color: var(--muted);
 }
 .activity-item > i {
@@ -2301,7 +2301,7 @@ input[type="color"] {
   text-align: center;
   padding: 10px 0;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 .calendar-grid {
   display: grid;
@@ -2319,7 +2319,7 @@ input[type="color"] {
   padding: 8px;
 }
 .calendar-cell > span {
-  font-size: 10px;
+  font-size: 12px;
   display: inline-flex;
   width: 24px;
   height: 24px;
@@ -2342,7 +2342,7 @@ input[type="color"] {
   text-align: left;
   padding: 5px;
   border-left: 2px solid;
-  font-size: 9px;
+  font-size: 12px;
   background: var(--purple-light);
   border-radius: 4px;
   margin-bottom: 4px;
@@ -2351,7 +2351,7 @@ input[type="color"] {
   text-overflow: ellipsis;
 }
 .view-note {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   margin: 17px 0;
   line-height: 1.8;
@@ -2368,7 +2368,7 @@ input[type="color"] {
   min-width: 720px;
 }
 .list-head {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   padding: 12px 15px;
   border-bottom: 1px solid var(--line);
@@ -2376,7 +2376,7 @@ input[type="color"] {
 .list-row {
   padding: 13px 15px;
   border-bottom: 1px solid var(--line);
-  font-size: 11px;
+  font-size: 12px;
   background: var(--surface);
 }
 .list-row:hover {
@@ -2386,7 +2386,7 @@ input[type="color"] {
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 10px;
+  font-size: 12px;
 }
 .list-title {
   display: flex;
@@ -2405,7 +2405,7 @@ input[type="color"] {
   display: flex;
   gap: 10px;
   align-items: center;
-  font-size: 10px;
+  font-size: 12px;
   padding: 0;
 }
 .priority-text.urgente {
@@ -2437,7 +2437,7 @@ input[type="color"] {
   border-bottom: 1px solid var(--line);
 }
 .timeline-head {
-  font-size: 9px;
+  font-size: 12px;
   color: var(--muted);
   min-height: 45px;
   background: var(--bg);
@@ -2451,7 +2451,7 @@ input[type="color"] {
 .timeline-row > span:first-child {
   padding: 13px;
   text-align: left;
-  font-size: 10px;
+  font-size: 12px;
 }
 .timeline-row > span.current {
   background: #b59bd318;
@@ -2490,7 +2490,7 @@ input[type="color"] {
   width: 100%;
   border-radius: 9px;
   padding: 13px;
-  font-size: 11px;
+  font-size: 12px;
   text-align: left;
 }
 .command-create svg:last-child {
@@ -2507,7 +2507,7 @@ input[type="color"] {
   display: flex;
   gap: 7px;
   align-items: center;
-  font-size: 11px;
+  font-size: 12px;
   padding: 8px;
   background: var(--bg);
   border-radius: 7px;
@@ -2520,7 +2520,7 @@ input[type="color"] {
   width: 100%;
   padding: 10px 7px;
   border-radius: 7px;
-  font-size: 11px;
+  font-size: 12px;
 }
 .command-result:hover {
   background: var(--hover);
@@ -2529,13 +2529,13 @@ input[type="color"] {
   flex: 1;
 }
 .command-result small {
-  font-size: 9px;
+  font-size: 12px;
   color: var(--muted);
   display: block;
   margin-top: 3px;
 }
 .command-dialog footer {
-  font-size: 9px;
+  font-size: 12px;
   color: var(--muted);
   padding: 20px 7px 0;
 }
@@ -2646,7 +2646,7 @@ input[type="color"] {
   position: fixed;
   bottom: 8px;
   right: 10px;
-  font-size: 9px;
+  font-size: 12px;
   color: #b09674;
   background: var(--surface);
   padding: 5px 9px;
@@ -2749,10 +2749,10 @@ textarea {
     font-size: 13px;
   }
   .tag {
-    font-size: 9px;
+    font-size: 12px;
   }
   .card-meta {
-    font-size: 9px;
+    font-size: 12px;
   }
   .board-heading {
     margin-top: 25px;
@@ -2818,7 +2818,7 @@ textarea {
     flex-shrink: 0;
   }
   .board-subtitle {
-    font-size: 10px;
+    font-size: 12px;
   }
   .kanban {
     gap: 14px;
@@ -2834,7 +2834,7 @@ textarea {
     gap: 15px;
   }
   .view-tabs button {
-    font-size: 9px;
+    font-size: 12px;
   }
   .view-controls {
     gap: 9px;
@@ -2846,10 +2846,10 @@ textarea {
     left: 260px;
   }
   .board-footer {
-    font-size: 8px;
+    font-size: 12px;
   }
   .quick-hint {
-    font-size: 8px;
+    font-size: 12px;
     margin: 0 4px;
   }
   .sidebar-bottom {
@@ -2868,10 +2868,10 @@ textarea {
     padding: 9px 6px;
   }
   .workspace-switch strong {
-    font-size: 10px;
+    font-size: 12px;
   }
   .workspace-switch small {
-    font-size: 7px;
+    font-size: 12px;
   }
   .workspace-icon {
     width: 27px;
@@ -2879,19 +2879,19 @@ textarea {
     font-size: 20px;
   }
   .main-nav button {
-    font-size: 11px;
+    font-size: 12px;
     padding: 10px;
     gap: 10px;
   }
   .boards-nav button {
-    font-size: 10px;
+    font-size: 12px;
     padding: 10px 7px;
   }
   .boards-nav button > span:nth-child(2) {
     max-width: 130px;
   }
   .sidebar-label {
-    font-size: 8px;
+    font-size: 12px;
     padding: 0 7px;
   }
   .sidebar-members > button {
@@ -2904,15 +2904,15 @@ textarea {
     font-size: 13px;
   }
   .weekly-card p {
-    font-size: 8px;
+    font-size: 12px;
   }
   .sidebar-help {
-    font-size: 9px;
+    font-size: 12px;
     gap: 6px;
     margin: 15px 2px;
   }
   .sidebar-profile small {
-    font-size: 8px;
+    font-size: 12px;
   }
   .board-title h1 {
     font-size: 24px;
@@ -2952,11 +2952,11 @@ textarea {
     height: 66px;
   }
   .breadcrumb {
-    font-size: 9px;
+    font-size: 12px;
     gap: 8px;
   }
   .greeting > span:last-child {
-    font-size: 9px;
+    font-size: 12px;
   }
   .main-shell main {
     padding: 24px 22px 14px;
@@ -2982,10 +2982,10 @@ textarea {
   }
   .focus-slots > div {
     padding: 12px 8px;
-    font-size: 9px;
+    font-size: 12px;
   }
   .focus-slots button {
-    font-size: 10px;
+    font-size: 12px;
   }
 }
 @media (max-width: 640px) {
@@ -3028,10 +3028,10 @@ textarea {
     padding: 22px 18px 100px;
   }
   .greeting {
-    font-size: 10px;
+    font-size: 12px;
   }
   .greeting > span:last-child {
-    font-size: 8px;
+    font-size: 12px;
     max-width: 140px;
     text-align: right;
   }
@@ -3055,7 +3055,7 @@ textarea {
     display: none;
   }
   .board-subtitle {
-    font-size: 10px;
+    font-size: 12px;
     max-width: 265px;
     margin-top: 13px;
     line-height: 1.7;
@@ -3084,7 +3084,7 @@ textarea {
     margin: 22px 0;
   }
   .progress-label {
-    font-size: 9px;
+    font-size: 12px;
     gap: 5px;
   }
   .board-progress {
@@ -3092,7 +3092,7 @@ textarea {
     margin: 0 3px;
   }
   .progress-label strong {
-    font-size: 9px;
+    font-size: 12px;
   }
   .quick-input {
     min-height: 55px;
@@ -3100,7 +3100,7 @@ textarea {
     gap: 8px;
   }
   .quick-input > input {
-    font-size: 11px;
+    font-size: 12px;
   }
   .quick-plus {
     width: 25px;
@@ -3119,7 +3119,7 @@ textarea {
     gap: 17px;
   }
   .view-tabs button {
-    font-size: 10px;
+    font-size: 12px;
     padding: 13px 0;
   }
   .view-tabs button span {
@@ -3136,7 +3136,7 @@ textarea {
   }
   .board-search input {
     width: 82px;
-    font-size: 9px;
+    font-size: 12px;
   }
   .board-search {
     gap: 5px;
@@ -3166,7 +3166,7 @@ textarea {
     font-size: 13px;
   }
   .column-count {
-    font-size: 10px;
+    font-size: 12px;
   }
   .column-header .column-grip {
     opacity: 1;
@@ -3188,7 +3188,7 @@ textarea {
     line-height: 1.7;
   }
   .card-tags .tag {
-    font-size: 9px;
+    font-size: 12px;
   }
   .card-title-row {
     margin-top: 10px;
@@ -3203,7 +3203,7 @@ textarea {
     height: 140px;
   }
   .card-meta {
-    font-size: 9px;
+    font-size: 12px;
   }
   .card-people .avatar {
     width: 26px;
@@ -3217,14 +3217,14 @@ textarea {
     opacity: 0.7;
   }
   .card-progress > span {
-    font-size: 9px;
+    font-size: 12px;
   }
   .add-card {
-    font-size: 11px;
+    font-size: 12px;
     padding: 10px;
   }
   .board-footer {
-    font-size: 9px;
+    font-size: 12px;
     line-height: 1.8;
     margin-top: 0;
   }
@@ -3246,7 +3246,7 @@ textarea {
     flex-direction: column;
     align-items: center;
     gap: 4px;
-    font-size: 8px;
+    font-size: 12px;
     color: #b1a2bf;
     width: 52px;
     min-height: 43px;
@@ -3288,7 +3288,7 @@ textarea {
     padding: 16px 20px;
   }
   .modal-header .eyebrow {
-    font-size: 8px;
+    font-size: 12px;
     max-width: 280px;
     line-height: 1.8;
   }
@@ -3304,7 +3304,7 @@ textarea {
     font-size: 16px;
   }
   .modal label {
-    font-size: 11px;
+    font-size: 12px;
   }
   .modal .primary,
   .modal .secondary {
@@ -3322,7 +3322,7 @@ textarea {
   }
   .detail-actions button {
     padding: 8px;
-    font-size: 10px;
+    font-size: 12px;
   }
   .detail-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3334,7 +3334,7 @@ textarea {
     height: 42px;
   }
   .detail-grid label > span {
-    font-size: 10px;
+    font-size: 12px;
   }
   .field-label input {
     font-size: 13px;
@@ -3366,10 +3366,10 @@ textarea {
     gap: 8px;
     max-width: 94vw;
     min-width: 290px;
-    font-size: 10px;
+    font-size: 12px;
   }
   .toast button {
-    font-size: 10px;
+    font-size: 12px;
   }
   .toast p {
     min-width: 0;
@@ -3384,7 +3384,7 @@ textarea {
   }
   .inline-composer > span {
     width: 100%;
-    font-size: 10px;
+    font-size: 12px;
   }
   .inline-composer .quick-add {
     width: 100%;
@@ -3396,7 +3396,7 @@ textarea {
     font-size: 25px;
   }
   .day-hero p {
-    font-size: 10px;
+    font-size: 12px;
     line-height: 1.7;
     max-width: 220px;
   }
@@ -3410,11 +3410,11 @@ textarea {
     flex-direction: column;
     align-items: flex-start;
     padding: 11px 9px;
-    font-size: 9px;
+    font-size: 12px;
     line-height: 1.6;
   }
   .focus-slots button {
-    font-size: 10px;
+    font-size: 12px;
     padding: 0;
   }
   .cards-grid {
@@ -3433,7 +3433,7 @@ textarea {
     font-size: 20px;
   }
   .team-summary p {
-    font-size: 10px;
+    font-size: 12px;
   }
   .section-title {
     font-size: 17px;
@@ -3447,7 +3447,7 @@ textarea {
     gap: 10px;
   }
   .activity-view .text-button {
-    font-size: 9px;
+    font-size: 12px;
     max-width: 100px;
     line-height: 1.6;
   }
@@ -3456,7 +3456,7 @@ textarea {
     gap: 10px;
   }
   .activity-item p {
-    font-size: 11px;
+    font-size: 12px;
   }
   .calendar-grid {
     border-radius: 8px;
@@ -3467,10 +3467,10 @@ textarea {
   }
   .calendar-cell > button {
     padding: 3px;
-    font-size: 7px;
+    font-size: 12px;
   }
   .calendar-cell > span {
-    font-size: 9px;
+    font-size: 12px;
     width: 20px;
     height: 20px;
   }
@@ -3478,21 +3478,21 @@ textarea {
     font-size: 21px;
   }
   .calendar-week {
-    font-size: 9px;
+    font-size: 12px;
   }
   .filter-panel {
     gap: 10px;
   }
   .filter-panel label {
     min-width: 90px;
-    font-size: 9px;
+    font-size: 12px;
   }
   .filter-panel select {
-    font-size: 10px;
+    font-size: 12px;
     padding: 7px;
   }
   .filter-panel > .text-button {
-    font-size: 10px;
+    font-size: 12px;
   }
   .board-menu {
     right: 0;
@@ -3504,7 +3504,7 @@ textarea {
     font-size: 15px;
   }
   .command-views button {
-    font-size: 10px;
+    font-size: 12px;
     padding: 8px;
   }
   .onboarding {
@@ -3512,7 +3512,7 @@ textarea {
   }
   .offline-badge {
     bottom: 76px;
-    font-size: 8px;
+    font-size: 12px;
   }
   .focus-mode {
     padding-bottom: 40px;
@@ -3570,7 +3570,7 @@ textarea {
   display: block;
 }
 .template-list small {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   display: block;
   margin-top: 6px;
@@ -3616,11 +3616,11 @@ textarea {
   font-size: 13px;
 }
 .card-meta {
-  font-size: 10px;
+  font-size: 12px;
   color: #85738f;
 }
 .tag {
-  font-size: 9px;
+  font-size: 12px;
 }
 .tag.purple {
   color: #7d5c9c;
@@ -3641,7 +3641,7 @@ textarea {
   color: #867592;
 }
 .card-progress > span {
-  font-size: 9px;
+  font-size: 12px;
   color: #8b769c;
 }
 .column-count {
@@ -3739,13 +3739,13 @@ textarea {
     font-size: 12px;
   }
   .sidebar-label {
-    font-size: 10px;
+    font-size: 12px;
   }
   .workspace-switch strong {
     font-size: 12px;
   }
   .workspace-switch small {
-    font-size: 9px;
+    font-size: 12px;
   }
   .board-subtitle {
     font-size: 12px;
@@ -3754,22 +3754,22 @@ textarea {
     font-size: 12px;
   }
   .greeting > span:last-child {
-    font-size: 11px;
+    font-size: 12px;
   }
   .quick-input > input {
     font-size: 13px;
   }
   .quick-hint {
-    font-size: 10px;
+    font-size: 12px;
   }
   .view-tabs button {
     font-size: 12px;
   }
   .board-search input {
-    font-size: 11px;
+    font-size: 12px;
   }
   .filter-button {
-    font-size: 11px;
+    font-size: 12px;
   }
   .column-header h2 {
     font-size: 14px;
@@ -3779,41 +3779,41 @@ textarea {
     line-height: 1.6;
   }
   .tag {
-    font-size: 10px;
+    font-size: 12px;
   }
   .card-meta {
-    font-size: 10px;
+    font-size: 12px;
   }
   .column-count {
-    font-size: 10px;
+    font-size: 12px;
   }
   .add-card {
-    font-size: 11px;
+    font-size: 12px;
   }
   .board-footer {
-    font-size: 10px;
+    font-size: 12px;
   }
   .board-footer button {
-    font-size: 10px;
+    font-size: 12px;
   }
   .progress-label,
   .progress-label b {
-    font-size: 10px;
+    font-size: 12px;
   }
   .breadcrumb {
-    font-size: 11px;
+    font-size: 12px;
   }
   .command-shortcut {
-    font-size: 11px;
+    font-size: 12px;
   }
   .local-status {
-    font-size: 9px;
+    font-size: 12px;
   }
   .sidebar-help {
-    font-size: 11px;
+    font-size: 12px;
   }
   .card-progress > span {
-    font-size: 10px;
+    font-size: 12px;
   }
   .column-content {
     gap: 15px;
@@ -3833,7 +3833,7 @@ textarea {
     display: flex;
     align-items: center;
     gap: 5px;
-    font-size: 10px;
+    font-size: 12px;
     color: #9d86af;
     padding: 0;
   }
@@ -3850,7 +3850,7 @@ textarea {
     width: 36px;
   }
   .quick-input > input {
-    font-size: 11px;
+    font-size: 12px;
   }
   .card-title-row h3 {
     font-size: 13px;
@@ -3865,10 +3865,10 @@ textarea {
   }
   .quick-chips {
     flex-wrap: wrap;
-    font-size: 9px;
+    font-size: 12px;
   }
   .quick-chips small {
-    font-size: 8px;
+    font-size: 12px;
   }
   .modal .template-list strong {
     font-size: 16px;

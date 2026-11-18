@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, MotionConfig, motion } from "framer-motion";
+import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
 import confetti from "canvas-confetti";
 import {
   Activity,
@@ -9,9 +9,10 @@ import {
   CalendarDays,
   Check,
   ChevronDown,
+  CloudOff,
+  CloudUpload,
   Command,
   Flame,
-  Heart,
   HelpCircle,
   LayoutGrid,
   List,
@@ -31,6 +32,8 @@ import {
   Redo2,
   Play,
   Pause,
+  PanelLeftClose,
+  PanelLeftOpen,
   RotateCcw,
 } from "lucide-react";
 import type { Board, Column, Member, View } from "./types";
@@ -54,7 +57,7 @@ import TeamAccounts from "./auth/TeamAccounts";
 import AccountSettings from "./auth/AccountSettings";
 import PushSettings from "./components/PushSettings";
 import { roleLabel, useIdentity } from "./auth/session";
-import { retrySave } from "./auth/remote";
+import { retrySave, useSaveStatus } from "./auth/remote";
 import { readPreference, writePreference } from "./lib/preferences";
 import CreateTaskDialog from "./components/CreateTaskDialog";
 import { isData } from "./data/validation";
@@ -76,11 +79,22 @@ const backgrounds = [
   { id: "mint", name: "Jardín", color: "#d9e8de" },
   { id: "dots", name: "Papel", color: "#e5e5ed" },
 ];
-function App() {
+const boardViews = [
+  { id: "board", label: "Tablero", icon: LayoutGrid },
+  { id: "list", label: "Lista", icon: List },
+  { id: "calendar", label: "Calendario", icon: CalendarDays },
+  { id: "timeline", label: "Línea de tiempo", icon: Rows3 },
+] as const;
+function App({ demo = false, initialDark, demoDrag = false }: {
+  demo?: boolean; initialDark?: boolean; demoDrag?: boolean;
+} = {}) {
   const account = useIdentity((s) => s.user);
   const data = useStore((s) => s.data);
   const notify = useStore((s) => s.notify);
   const storageError = useStore((s) => s.storageError);
+  const saving = useSaveStatus((s) => s.saving);
+  const reducedMotion = useReducedMotion();
+  const [rail, setRail] = useState(() => !demo && readPreference("orbita:sidebar") === "compact");
   const [boardId, setBoardId] = useState(
     () => readPreference("orbita:board") || data.boards[0].id,
   );
@@ -93,7 +107,7 @@ function App() {
   );
   const [editingColumn, setEditingColumn] = useState<Column | null>(null);
   const [dark, setDark] = useState(
-    () => readPreference("orbita:dark") === "true",
+    () => initialDark ?? readPreference("orbita:dark") === "true",
   );
   const [search, setSearch] = useState("");
   const [person, setPerson] = useState("all");
@@ -149,11 +163,11 @@ function App() {
   }, []);
   useEffect(() => {
     document.documentElement.dataset.theme = dark ? "dark" : "light";
-    writePreference("orbita:dark", String(dark));
-  }, [dark]);
+    if (!demo) writePreference("orbita:dark", String(dark));
+  }, [dark, demo]);
   useEffect(() => {
-    writePreference("orbita:board", board.id);
-  }, [board.id]);
+    if (!demo) writePreference("orbita:board", board.id);
+  }, [board.id, demo]);
   useEffect(() => {
     const on = () => setOnline(navigator.onLine);
     window.addEventListener("online", on);
@@ -183,8 +197,9 @@ function App() {
     useStore.getState().complete(id);
     if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches)
       confetti({
-        particleCount: 55,
-        spread: 65,
+        particleCount: 18,
+        spread: 52,
+        ticks: 48,
         origin: { y: 0.75 },
         colors: ["#9d8bcf", "#f2bd9c", "#a4c7af", "#ead18f"],
         disableForReducedMotion: true,
@@ -239,6 +254,7 @@ function App() {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.key === "?") setDialog("help");
       if (e.key === "n") {
+        if (account?.role === "viewer") return;
         e.preventDefault();
         setQuickFocus((x) => x + 1);
       }
@@ -252,7 +268,7 @@ function App() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [dialog, taskId, concentrating]);
+  }, [dialog, taskId, concentrating, account?.role]);
   const taskCreated = (id: string) => {
     const task = useStore.getState().data.tasks.find((t) => t.id === id);
     if (!task) return;
@@ -264,7 +280,7 @@ function App() {
     if (kanban && column)
       kanban.scrollTo?.({
         left: column.offsetLeft - kanban.offsetLeft,
-        behavior: "smooth",
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
       });
   };
   const allTasks = data.tasks.filter((t) => t.boardId === board.id);
@@ -309,11 +325,7 @@ function App() {
     day: "numeric",
     month: "long",
   });
-  const weekCount = data.tasks.filter(
-    (t) =>
-      t.completedAt &&
-      Date.now() - new Date(t.completedAt).getTime() < 7 * 86400000,
-  ).length;
+  const streakDays = streak(data.focusDays);
   const hour = new Date().getHours();
   const greeting =
     hour < 12 ? "Buenos días" : hour < 18 ? "Buenas tardes" : "Buenas noches";
@@ -321,12 +333,13 @@ function App() {
   return (
     <MotionConfig reducedMotion="user">
       <div
-        className={`app bg-${board.background} role-${account?.role || "local"}`}
+        className={`app bg-${board.background} role-${account?.role || "local"} ${rail ? "rail" : ""}`}
       >
         <aside className="sidebar">
-          <a
+          <div className="sidebar-head"><a
             className="brand"
             href="#"
+            aria-label="Órbita · Tablero"
             onClick={(e) => {
               e.preventDefault();
               setView("board");
@@ -335,24 +348,31 @@ function App() {
             <span className="brand-icon">
               <Orbit size={25} />
             </span>
-            <span>
+            <span className="brand-name">
               órbita<span className="brand-dot">.</span>
             </span>
           </a>
-          <div className="workspace-switch">
-            <span className="workspace-icon">✳</span>
-            <div>
+          <button className="icon-button rail-toggle" aria-label={rail ? "Expandir barra lateral" : "Colapsar barra lateral"} title={rail ? "Expandir barra lateral" : "Colapsar barra lateral"} onClick={() => {
+            setRail(!rail);
+            if (!demo) writePreference("orbita:sidebar", rail ? "expanded" : "compact");
+          }}>{rail ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}</button></div>
+          <button className="workspace-switch" title="Cambiar de tablero" onClick={() => setDialog("command")}>
+            <span className="workspace-icon" aria-hidden="true"><Orbit size={17} /></span>
+            <span className="workspace-name">
               <strong>Nuestro espacio</strong>
-              <small>Pequeño equipo, grandes ideas</small>
-            </div>
+            </span>
             <ChevronDown size={14} />
-          </div>
+          </button>
+          <div className="sidebar-label"><span>Personal</span></div>
           <nav className="main-nav" aria-label="Navegación principal">
             <button
               className={view === "day" ? "active" : ""}
+              aria-current={view === "day" ? "page" : undefined}
+              title="Mi día"
+              aria-label="Mi día"
               onClick={() => setView("day")}
             >
-              <Sun size={18} /> Mi día{" "}
+              <Sun size={18} /> <span className="nav-label">Mi día</span>
               <span className="nav-count">
                 {
                   allTasks.filter(
@@ -366,22 +386,29 @@ function App() {
             </button>
             <button
               className={view === "team" ? "active" : ""}
+              aria-current={view === "team" ? "page" : undefined}
+              title="Tú y yo"
+              aria-label="Tú y yo"
               onClick={() => setView("team")}
             >
-              <Users size={18} /> Tú y yo <span className="nav-heart">♡</span>
+              <Users size={18} /> <span className="nav-label">Tú y yo</span>
             </button>
             <button
               className={view === "activity" ? "active" : ""}
+              aria-current={view === "activity" ? "page" : undefined}
+              title="Actividad"
+              aria-label={unread ? `Actividad, ${unread} sin leer` : "Actividad"}
               onClick={() => setView("activity")}
             >
-              <Activity size={18} /> Actividad{" "}
-              {unread > 0 && <span className="nav-dot" />}
+              <Activity size={18} /> <span className="nav-label">Actividad</span>
+              {unread > 0 && <span className="nav-count" aria-label={`${unread} sin leer`}>{unread}</span>}
             </button>
           </nav>
           <div className="sidebar-label">
-            <span>TUS TABLEROS</span>
+            <span>Tableros</span>
             <button
               aria-label="Crear tablero"
+              title="Crear tablero"
               onClick={() => setDialog("board")}
             >
               <Plus size={15} />
@@ -391,6 +418,9 @@ function App() {
             {data.boards.map((b) => (
               <button
                 key={b.id}
+                title={b.name}
+                aria-label={b.name}
+                aria-current={board.id === b.id && ["board", "list", "calendar", "timeline"].includes(view) ? "page" : undefined}
                 className={
                   board.id === b.id &&
                   ["board", "list", "calendar", "timeline"].includes(view)
@@ -400,18 +430,18 @@ function App() {
                 onClick={() => changeBoard(b.id)}
               >
                 <span>{b.emoji}</span>
-                <span>{b.name}</span>
-                <i />
+                <span className="nav-label">{b.name}</span>
               </button>
             ))}
-            <button className="new-board" onClick={() => setDialog("board")}>
-              <Plus size={15} /> Nuevo tablero
+            <button className="new-board" aria-label="Nuevo tablero" title="Nuevo tablero" onClick={() => setDialog("board")}>
+              <Plus size={15} /> <span className="nav-label">Nuevo tablero</span>
             </button>
           </nav>
           <div className="sidebar-label team-label">
-            <span>EN ESTA ÓRBITA</span>
+            <span>Equipo</span>
             <button
               aria-label="Añadir persona"
+              title="Añadir persona"
               onClick={() => setDialog("team")}
             >
               <Plus size={15} />
@@ -441,35 +471,22 @@ function App() {
               ))}
           </div>
           <div className="sidebar-bottom">
-            <div className="weekly-card">
-              <span>🌱</span>
-              <strong>
-                Las cosas bonitas
-                <br />
-                se construyen juntos.
-              </strong>
-              <p>{weekCount} pequeñas victorias esta semana.</p>
-              <div>
-                <i style={{ width: `${Math.min(100, weekCount * 10)}%` }} />
-              </div>
-              <small>
-                Vamos a nuestro ritmo <Heart size={10} />
-              </small>
-            </div>
-            <button className="sidebar-help" onClick={() => setDialog("help")}>
-              <HelpCircle size={16} /> Un poquito de ayuda <kbd>?</kbd>
+            <button className="sidebar-help" aria-label="Atajos y ayuda" title="Atajos y ayuda" onClick={() => setDialog("help")}>
+              <HelpCircle size={16} /> <span className="nav-label">Atajos y ayuda</span> <kbd>?</kbd>
             </button>
             <div className="sidebar-profile">
-              <button onClick={() => setDialog("settings")}>
+              <button aria-label="Perfil y ajustes" title="Perfil y ajustes" onClick={() => setDialog("settings")}>
                 <Avatar member={user} size="small" />
                 <span>
                   {user.name}
-                  <small>Este es tu espacio</small>
+                  {account && <small>{roleLabel[account.role]}</small>}
                 </span>
               </button>
               <button
                 className="icon-button"
                 aria-label="Cambiar tema"
+                title="Cambiar tema"
+                aria-pressed={dark}
                 onClick={() => setDark(!dark)}
               >
                 {dark ? <Sun size={17} /> : <Moon size={17} />}
@@ -478,17 +495,6 @@ function App() {
           </div>
         </aside>
         <div className="main-shell">
-          {account && (
-            <div className="session-bar">
-              <span>
-                Sesión de <strong>{account.name}</strong>
-              </span>
-              <span className="role-badge">{roleLabel[account.role]}</span>
-              {storageError && (
-                <button onClick={retrySave}>Reintentar guardado</button>
-              )}
-            </div>
-          )}
           <header className="topbar">
             <div className="breadcrumb">
               <span>Nuestro espacio</span>
@@ -512,21 +518,21 @@ function App() {
                 <span>Encuentra tu próxima idea</span>
                 <kbd>⌘ K</kbd>
               </button>
-              <span className="local-status">
-                <i className={online ? "" : "offline"} />
-                {storageError
-                  ? "Cambios sin guardar"
-                  : online
-                    ? "Espacio compartido"
-                    : "Sin conexión"}
-              </span>
+              <div className={`save-chip ${storageError || !online ? "warning" : saving ? "saving" : ""}`}>
+                <span role="status">
+                  {storageError || !online ? <CloudOff size={15} /> : saving ? <CloudUpload size={15} /> : <Check size={15} />}
+                  {storageError ? "Sin guardar" : !online ? "Sin conexión" : saving ? "Guardando…" : "Guardado"}
+                </span>
+                {storageError && <button onClick={retrySave} title="Reintentar guardado">Reintentar</button>}
+              </div>
               <button
                 className="icon-button notification-button"
                 aria-label={`Notificaciones, ${unread} sin leer`}
+                title="Notificaciones"
                 onClick={() => setView("activity")}
               >
                 <Bell size={19} />
-                {unread > 0 && <i />}
+                {unread > 0 && <b>{unread}</b>}
               </button>
               <button
                 className="profile-button"
@@ -546,17 +552,20 @@ function App() {
                 pull.current &&
                 e.changedTouches[0].clientY - pull.current > 110
               ) {
-                notify(
-                  "Estás al día. Tus cambios están guardados en este navegador ✨",
-                );
+                notify(storageError
+                  ? "Tienes cambios sin guardar."
+                  : !online ? "Sigues sin conexión."
+                    : saving ? "Guardando tus cambios…" : "Estás al día.");
               }
               pull.current = 0;
             }}
           >
+            <div className="board-intro">
             <div className="greeting">
               <span>
-                {greeting}, {user.name} <span className="wave">✺</span>
+                {greeting}, {user.name}
               </span>
+              <span aria-hidden="true">·</span>
               <span>{dayName}</span>
             </div>
             <div className="board-heading">
@@ -583,20 +592,13 @@ function App() {
                   <button
                     className="heading-menu icon-button"
                     aria-label="Ajustes del tablero"
+                    title="Ajustes del tablero"
+                    aria-expanded={menu}
                     onClick={() => setMenu(!menu)}
                   >
                     <MoreHorizontal size={22} />
                   </button>
                 </div>
-                <p className="board-subtitle">
-                  {view === "day"
-                    ? "Un poco de foco, un poco de magia."
-                    : view === "team"
-                      ? "Cada quien con su talento. Los dos en la misma dirección."
-                      : view === "activity"
-                        ? "Cada pequeño movimiento cuenta una historia."
-                        : "Un lugar para las ideas, los avances y todo lo que vamos a lograr juntos."}
-                </p>
               </div>
               <div className="board-team">
                 <div className="avatar-stack">
@@ -609,6 +611,7 @@ function App() {
                   <button
                     className="invite-circle"
                     aria-label="Añadir al equipo"
+                    title="Añadir al equipo"
                     onClick={() => setDialog("team")}
                   >
                     <Plus size={14} />
@@ -616,9 +619,11 @@ function App() {
                 </div>
                 <button
                   className="invite-button"
+                  title="Nuestro equipo"
+                  aria-label="Nuestro equipo"
                   onClick={() => setDialog("team")}
                 >
-                  <Users size={14} /> Nuestro equipo
+                  <Users size={16} /> <span>Nuestro equipo</span>
                 </button>
               </div>
               {menu && (
@@ -674,29 +679,21 @@ function App() {
                 <Users size={13} /> Tú y yo
               </button>
             </div>
-            <div className="board-insights">
-              <div className="progress-label">
-                <span className="progress-symbol">
-                  <Check size={12} />
-                </span>
-                <strong>
-                  {completed} de {allTasks.length}
-                </strong>
-                <span>pequeñas victorias</span>
-                <div className="board-progress">
-                  <motion.i
-                    animate={{ width: `${progress}%` }}
-                    transition={{ type: "spring", stiffness: 120, damping: 20 }}
-                  />
-                </div>
-                <b>{progress}%</b>
+            <section className="board-insights" aria-label="Progreso del tablero">
+              <div className="insight-head">
+                <span><Check size={16} /> Pequeñas victorias</span>
+                <motion.strong key={completed} initial={reducedMotion ? false : { opacity: 0.5, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: reducedMotion ? 0 : 0.18, ease: [0.2, 0.8, 0.2, 1] }}>{completed} de {allTasks.length}</motion.strong>
               </div>
-              <span className="streak-mini">
-                <Flame size={15} />
-                {streak(data.focusDays) > 0
-                  ? `${streak(data.focusDays)} días en racha`
-                  : "Hoy puede empezar tu racha"}
-              </span>
+              <div className="board-progress" role="progressbar" aria-label="Tareas completadas" aria-valuenow={progress}>
+                <motion.i animate={{ width: `${progress}%` }} transition={{ duration: reducedMotion ? 0 : 0.24, ease: [0.2, 0.8, 0.2, 1] }} />
+              </div>
+              <div className="insight-foot">
+                <span>{progress}% completado</span>
+                <motion.span className="streak-mini" key={streakDays} initial={reducedMotion ? false : { opacity: 0.55, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: reducedMotion ? 0 : 0.22, ease: [0.2, 0.8, 0.2, 1] }}>
+                  <Flame size={14} /> {streakDays ? `${streakDays} ${streakDays === 1 ? "día" : "días"} en racha` : "Sin racha"}
+                </motion.span>
+              </div>
+            </section>
             </div>
             <div className="quick-row">
               <QuickAdd
@@ -713,6 +710,7 @@ function App() {
                 onClick={() => setDialog("templates")}
               >
                 <Sparkles size={17} />
+                <span>Plantillas</span>
               </button>
             </div>
             <div className="view-toolbar">
@@ -721,21 +719,25 @@ function App() {
                 role="tablist"
                 aria-label="Vista del tablero"
               >
-                {(
-                  [
-                    { id: "board", label: "Tablero", icon: LayoutGrid },
-                    { id: "list", label: "Lista", icon: List },
-                    { id: "calendar", label: "Calendario", icon: CalendarDays },
-                    { id: "timeline", label: "Línea de tiempo", icon: Rows3 },
-                  ] as const
-                ).map((v) => (
+                {boardViews.map((v, index) => (
                   <button
                     role="tab"
                     aria-label={v.label}
+                    title={v.label}
                     aria-selected={view === v.id}
+                    tabIndex={view === v.id || (index === 0 && !boardViews.some((item) => item.id === view)) ? 0 : -1}
                     className={view === v.id ? "active" : ""}
                     key={v.id}
                     onClick={() => setView(v.id)}
+                    onKeyDown={(event) => {
+                      const offset = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
+                      const last = boardViews.length - 1;
+                      if (!offset && event.key !== "Home" && event.key !== "End") return;
+                      event.preventDefault();
+                      const next = event.key === "Home" ? 0 : event.key === "End" ? last : (index + offset + boardViews.length) % boardViews.length;
+                      setView(boardViews[next].id);
+                      event.currentTarget.parentElement?.querySelectorAll("button")[next]?.focus();
+                    }}
                   >
                     <v.icon size={15} />
                     <span>{v.label}</span>
@@ -763,6 +765,8 @@ function App() {
                 </div>
                 <button
                   aria-label="Filtrar tareas"
+                  title="Filtrar tareas"
+                  aria-expanded={filters}
                   className={`filter-button ${filters || activeFilters ? "active" : ""}`}
                   onClick={() => setFilters(!filters)}
                 >
@@ -773,6 +777,7 @@ function App() {
                 <button
                   className="icon-button board-settings-button"
                   aria-label="Opciones de vista"
+                  title="Opciones de vista"
                   onClick={() => setDialog("settings")}
                 >
                   <MoreHorizontal size={19} />
@@ -880,6 +885,8 @@ function App() {
                   <BoardView
                     board={board}
                     tasks={tasks}
+                    selectedTask={taskId}
+                    demoDrag={demoDrag}
                     onOpen={setTaskId}
                     onComplete={finish}
                     onEditColumn={(c) => {
@@ -904,10 +911,6 @@ function App() {
               </motion.div>
             </AnimatePresence>
             <footer className="board-footer">
-              <span>
-                <span className="footer-spark">✧</span> No hace falta hacerlo
-                todo. Solo dar el siguiente paso.
-              </span>
               <button onClick={() => setDialog("help")}>
                 <Command size={12} /> Atajos de teclado
               </button>

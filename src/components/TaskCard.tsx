@@ -1,5 +1,5 @@
 import { memo, useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
@@ -13,11 +13,12 @@ import {
   LockKeyhole,
   Repeat2,
   Star,
+  Paperclip,
 } from "lucide-react";
 import type { Task } from "../types";
 import { useStore } from "../store";
 import { dueLabel, isLate, today } from "../lib/utils";
-import { Avatar } from "./UI";
+import { AvatarStack } from "./UI";
 import { useIdentity } from "../auth/session";
 export const tagColor = (tag: string) =>
   ["Diseño", "Producto"].includes(tag)
@@ -32,13 +33,18 @@ export default memo(function TaskCard({
   onOpen,
   onComplete,
   overlay = false,
+  selected = false,
+  variant,
 }: {
   task: Task;
   onOpen: (id: string) => void;
   onComplete: (id: string) => void;
   overlay?: boolean;
+  selected?: boolean;
+  variant?: "minimal" | "standard" | "full";
 }) {
   const readOnly = useIdentity((s) => s.user?.role === "viewer");
+  const reducedMotion = useReducedMotion();
   const {
     attributes,
     listeners,
@@ -67,6 +73,13 @@ export default memo(function TaskCard({
   const [title, setTitle] = useState(task.title);
   const done = task.checklist.filter((c) => c.done).length;
   const member = data.members.find((m) => m.id === task.assignee);
+  const details = task.checklist.length || task.comments.length || task.attachments.length || task.cover || task.blocked;
+  const layout = variant ?? (details ? "full" : task.tags.length || task.due || task.priority !== "media" ||
+    task.recurrence !== "ninguna" || task.focus.length || task.assignee !== data.currentUser ? "standard" : "minimal");
+  const participants = [member, ...task.comments.map((comment) => data.members.find((person) => person.id === comment.author))]
+    .filter((person) => person !== undefined);
+  const people = [...new Map(participants.map((person) => [person.id, person])).values()].slice(0, 2);
+  const overdue = isLate(task);
   const stale =
     !task.completedAt &&
     Date.now() - new Date(task.movedAt).getTime() > 5 * 86400000;
@@ -121,16 +134,16 @@ export default memo(function TaskCard({
           setSwipe(0);
         }}
         layout="position"
-        initial={{ opacity: 0, y: 12 }}
+        initial={reducedMotion ? false : { opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0, x: swipe }}
         exit={{ opacity: 0, scale: 0.9 }}
-        transition={{ duration: 0.2 }}
+        transition={{ duration: reducedMotion ? 0 : 0.18, ease: [0.2, 0.8, 0.2, 1] }}
         style={
           {
             "--member-color": member?.color,
           } as React.CSSProperties
         }
-        className={`task-card ${overlay ? "dragging" : ""} ${task.completedAt ? "completed" : ""}`}
+        className={`task-card card-${layout} ${overlay ? "dragging" : ""} ${task.completedAt ? "completed" : ""} ${selected ? "selected" : ""} ${overdue ? "overdue" : ""}`}
         onClick={(e) => {
           if (suppressClick.current) {
             suppressClick.current = false;
@@ -152,10 +165,10 @@ export default memo(function TaskCard({
         }}
         tabIndex={overlay ? -1 : 0}
         aria-hidden={overlay || undefined}
-        id={`task-${task.id}`}
+        id={overlay ? undefined : `task-${task.id}`}
         aria-label={`Abrir ${task.title}`}
       >
-        {task.cover && (
+        {layout === "full" && task.cover && (
           <div className={`card-cover ${task.cover}`} aria-hidden="true">
             {task.cover === "violet" ? (
               <>
@@ -190,7 +203,7 @@ export default memo(function TaskCard({
           </div>
         )}
         <div className="card-body">
-          <div className="card-tags">
+          {layout !== "minimal" && (task.tags.length > 0 || ["alta", "urgente"].includes(task.priority)) && <div className="card-tags">
             {task.tags.slice(0, 2).map((tag) => (
               <span className={`tag ${tagColor(tag)}`} key={tag}>
                 {tag}
@@ -202,18 +215,9 @@ export default memo(function TaskCard({
               </span>
             )}
             {task.priority === "alta" && (
-              <span className="priority-dot" title="Prioridad alta" />
+              <span className="tag peach"><Flag size={12} /> Alta</span>
             )}
-            <button
-              className="drag-handle"
-              aria-label={`Arrastrar ${task.title}`}
-              onClick={(e) => e.stopPropagation()}
-              {...attributes}
-              {...listeners}
-            >
-              <GripVertical size={14} />
-            </button>
-          </div>
+          </div>}
           <div className="card-title-row">
             <button
               className={`complete-circle ${task.completedAt ? "checked" : ""}`}
@@ -226,7 +230,7 @@ export default memo(function TaskCard({
                 onComplete(task.id);
               }}
             >
-              {task.completedAt && <Check size={12} />}
+              <span className="check-mark"><Check size={13} /></span>
             </button>
             {editing ? (
               <input
@@ -264,14 +268,22 @@ export default memo(function TaskCard({
                 {task.title}
               </h3>
             )}
+            <button
+              className="drag-handle"
+              title="Arrastrar tarea"
+              aria-label={`Arrastrar ${task.title}`}
+              onClick={(e) => e.stopPropagation()}
+              {...attributes}
+              {...listeners}
+            ><GripVertical size={16} /></button>
           </div>
-          {task.blocked && (
+          {layout === "full" && task.blocked && (
             <p className="blocked">
               <LockKeyhole size={11} /> {task.blocked}
             </p>
           )}
-          {stale && <p className="stale">Lleva 5 días aquí 👀</p>}
-          {task.checklist.length > 0 && (
+          {layout === "full" && stale && <p className="stale">Lleva más de 5 días aquí 👀</p>}
+          {layout === "full" && task.checklist.length > 0 && (
             <div className="card-progress">
               <div>
                 <motion.i
@@ -285,12 +297,12 @@ export default memo(function TaskCard({
               </span>
             </div>
           )}
-          <div className="card-footer">
+          {layout !== "minimal" && <div className="card-footer">
             <div className="card-meta">
               {task.due && (
                 <span
                   className={
-                    isLate(task)
+                    overdue
                       ? "late"
                       : task.due.slice(0, 10) === today()
                         ? "due-today"
@@ -298,25 +310,29 @@ export default memo(function TaskCard({
                   }
                 >
                   <CalendarDays size={12} />
-                  {dueLabel(task.due)}
+                  {overdue ? "Vencida · " : ""}{dueLabel(task.due)}
                 </span>
               )}
               {!!task.comments.length && (
-                <span>
+                <span title={`${task.comments.length} comentarios`}>
                   <MessageCircle size={12} />
                   {task.comments.length}
                 </span>
+              )}
+              {!!task.attachments.length && (
+                <span title={`${task.attachments.length} adjuntos`}><Paperclip size={13} /> {task.attachments.length}</span>
               )}
               {task.recurrence !== "ninguna" && <Repeat2 size={12} />}{" "}
               {!!task.focus.length && (
                 <Star size={12} fill="#d6b65e" color="#d6b65e" />
               )}
-              {task.completedAt && <CheckCheck size={14} color="#5e9675" />}
+              {task.completedAt && <span title="Completada" className="done-meta"><CheckCheck size={14} /></span>}
             </div>
             <div className="card-people">
               <button
                 className="pass-small"
                 aria-label="Pasar la pelota"
+                title="Pasar la pelota"
                 onClick={(e) => {
                   e.stopPropagation();
                   const other = data.members.find(
@@ -332,9 +348,9 @@ export default memo(function TaskCard({
               >
                 <ArrowUpRight size={13} />
               </button>
-              <Avatar member={member} size="small" />
+              <AvatarStack people={people} />
             </div>
-          </div>
+          </div>}
         </div>
       </motion.article>
     </div>

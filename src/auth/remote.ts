@@ -1,4 +1,5 @@
 import type { Data } from "../types";
+import { create } from "zustand";
 import {
   configureRepository,
   publishData,
@@ -15,11 +16,13 @@ export interface SessionResult {
 }
 let retry: () => void = () => {};
 let stop: () => void = () => {};
+export const useSaveStatus = create<{ saving: boolean }>(() => ({ saving: false }));
 export const retrySave = () => retry();
 export function stopRemote() {
   stop();
   stop = () => {};
   retry = () => {};
+  useSaveStatus.setState({ saving: false });
 }
 export function connectRemote(initial: Data, version: number, user: Account) {
   stopRemote();
@@ -57,6 +60,7 @@ export function connectRemote(initial: Data, version: number, user: Account) {
   async function drain() {
     if (working || closed) return;
     working = true;
+    useSaveStatus.setState({ saving: true });
     try {
       while (queued && !closed) {
         const data: Data = queued;
@@ -126,6 +130,7 @@ export function connectRemote(initial: Data, version: number, user: Account) {
     } finally {
       sending = null;
       working = false;
+      if (!closed) useSaveStatus.setState({ saving: false });
     }
   }
   const repo: Repository = {

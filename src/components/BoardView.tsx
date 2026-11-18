@@ -12,6 +12,7 @@ import {
   useDroppable,
   type DragEndEvent,
   type DragStartEvent,
+  type DragOverEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -22,7 +23,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { MoreHorizontal, Plus, GripVertical } from "lucide-react";
+import { ArrowDownToLine, MoreHorizontal, Plus, GripVertical, Columns3 } from "lucide-react";
 import type { Board, Column, Task } from "../types";
 import TaskCard from "./TaskCard";
 import { Empty } from "./UI";
@@ -37,6 +38,9 @@ function BoardColumn({
   onComplete,
   onEdit,
   onAdd,
+  selectedTask,
+  target,
+  previewTask,
 }: {
   column: Column;
   tasks: Task[];
@@ -45,6 +49,9 @@ function BoardColumn({
   onComplete: (id: string) => void;
   onEdit: (c: Column) => void;
   onAdd: (id: string) => void;
+  selectedTask?: string | null;
+  target: boolean;
+  previewTask?: Task;
 }) {
   const role = useIdentity((s) => s.user?.role);
   const sortable = useSortable({
@@ -60,11 +67,14 @@ function BoardColumn({
     (s) => s.data.tasks.filter((t) => t.columnId === column.id).length,
   );
   const finished = column.id === board.columns.at(-1)?.id;
+  const lane = ({
+    "#ad91d9": "todo", "#e6b25d": "doing", "#80b4c3": "review", "#8cba9e": "done",
+  } as Record<string, string>)[column.color.toLowerCase()] || "custom";
   return (
     <section
       data-column-id={column.id}
       ref={sortable.setNodeRef}
-      className={`board-column ${isOver ? "over" : ""}`}
+      className={`board-column lane-${lane} ${target || isOver ? "over" : ""}`}
       style={
         {
           transform: CSS.Transform.toString(sortable.transform),
@@ -82,18 +92,22 @@ function BoardColumn({
         >
           {column.name}
         </h2>
-        <span className="column-count">{count}</span>
+        <span className="column-count" title={column.wip ? `Límite de trabajo en curso: ${column.wip}` : undefined}>
+          {count}{column.wip ? ` / ${column.wip}` : ""}
+        </span>
         <button
           {...sortable.attributes}
           {...sortable.listeners}
           className="column-grip"
           aria-label={`Reordenar columna ${column.name}`}
+          title="Reordenar columna"
         >
           <GripVertical size={13} />
         </button>
         <button
           className="icon-button"
           aria-label={`Editar columna ${column.name}`}
+          title="Editar columna"
           onClick={() => onEdit(column)}
         >
           <MoreHorizontal size={18} />
@@ -101,6 +115,7 @@ function BoardColumn({
         <button
           className="icon-button"
           aria-label={`Añadir a ${column.name}`}
+          title="Añadir tarea"
           onClick={() => onAdd(column.id)}
         >
           <Plus size={17} />
@@ -131,17 +146,19 @@ function BoardColumn({
               <TaskCard
                 key={task.id}
                 task={task}
+                selected={task.id === selectedTask}
                 onOpen={onOpen}
                 onComplete={onComplete}
               />
             ))}
           </AnimatePresence>
         </SortableContext>
-        {!tasks.length && (
+        {target && <div className="column-drop" role="status"><ArrowDownToLine size={16} /> Suelta la tarea aquí</div>}
+        {previewTask && <div className="preview-drag" aria-hidden="true"><TaskCard task={previewTask} overlay onOpen={() => {}} onComplete={() => {}} /></div>}
+        {!tasks.length && !target && (
           <div className="column-empty">
-            {finished
-              ? "Aquí van las pequeñas victorias 🌱"
-              : "Un espacio para lo que viene ✨"}
+            <ArrowDownToLine size={18} />
+            {finished ? "Aún no hay tareas completadas" : "Arrastra una tarea aquí"}
           </div>
         )}
         <button className="add-card" onClick={() => onAdd(column.id)}>
@@ -159,6 +176,8 @@ export default function BoardView({
   onEditColumn,
   onAddColumn,
   onTaskCreated,
+  selectedTask,
+  demoDrag = false,
 }: {
   board: Board;
   tasks: Task[];
@@ -167,8 +186,11 @@ export default function BoardView({
   onEditColumn: (c: Column) => void;
   onAddColumn: () => void;
   onTaskCreated: (id: string) => void;
+  selectedTask?: string | null;
+  demoDrag?: boolean;
 }) {
   const [drag, setDrag] = useState<Task | null>(null);
+  const [hoverColumn, setHoverColumn] = useState("");
   const [quickColumn, setQuickColumn] = useState("");
   const commit = useStore((s) => s.commit);
   const moveTask = useStore((s) => s.moveTask);
@@ -183,6 +205,7 @@ export default function BoardView({
   );
   function end(e: DragEndEvent) {
     setDrag(null);
+    setHoverColumn("");
     if (!e.over || e.active.id === e.over.id) return;
     const activeType = e.active.data.current?.type;
     if (activeType === "column") {
@@ -216,6 +239,16 @@ export default function BoardView({
     moveTask(moving.id, String(columnId), targetTask?.id);
     if (finish) onComplete(moving.id);
   }
+  function highlight(e: DragOverEvent) {
+    const over = e.over;
+    if (!over || e.active.data.current?.type !== "task") {
+      setHoverColumn("");
+      return;
+    }
+    setHoverColumn(String(over.data.current?.columnId || over.data.current?.task?.columnId || over.id));
+  }
+  const previewColumn = demoDrag && !drag ? board.columns[1]?.id : undefined;
+  const previewTask = tasks.find((task) => task.columnId === board.columns[0]?.id);
   if (!board.columns.length)
     return (
       <Empty
@@ -234,12 +267,24 @@ export default function BoardView({
         onDragStart={(e: DragStartEvent) =>
           setDrag(tasks.find((t) => t.id === e.active.id) || null)
         }
-        onDragCancel={() => setDrag(null)}
+        onDragOver={highlight}
+        onDragCancel={() => { setDrag(null); setHoverColumn(""); }}
         onDragEnd={end}
         accessibility={{
           screenReaderInstructions: {
             draggable:
               "Pulsa espacio para tomar una tarjeta. Usa las flechas para moverla y espacio para soltarla. Escape para cancelar.",
+          },
+          announcements: {
+            onDragStart: () => "Elemento tomado.",
+            onDragOver: ({ over }) => {
+              if (!over) return "Fuera de una columna.";
+              const id = over.data.current?.columnId || over.data.current?.task?.columnId || over.id;
+              const name = board.columns.find((column) => column.id === id)?.name;
+              return name ? `Destino: ${name}.` : "Destino disponible.";
+            },
+            onDragEnd: ({ over }) => over ? "Elemento soltado." : "Movimiento cancelado.",
+            onDragCancel: () => "Movimiento cancelado.",
           },
         }}
       >
@@ -255,6 +300,9 @@ export default function BoardView({
                 column={c}
                 board={board}
                 tasks={tasks.filter((t) => t.columnId === c.id)}
+                selectedTask={selectedTask}
+                target={hoverColumn === c.id || previewColumn === c.id}
+                previewTask={previewColumn === c.id ? previewTask : undefined}
                 onOpen={onOpen}
                 onComplete={onComplete}
                 onEdit={onEditColumn}
@@ -262,13 +310,6 @@ export default function BoardView({
               />
             ))}
           </SortableContext>
-          <button
-            className="add-column"
-            onClick={onAddColumn}
-            aria-label="Crear columna"
-          >
-            <Plus size={18} />
-          </button>
         </div>
         <DragOverlay>
           {drag && (
@@ -281,6 +322,11 @@ export default function BoardView({
           )}
         </DragOverlay>
       </DndContext>
+      <div className="column-actions">
+        <button className="add-column" onClick={onAddColumn} aria-label="Crear columna" title="Añadir columna">
+          <Columns3 size={16} /> Añadir columna
+        </button>
+      </div>
       {quickColumn && (
         <div className="inline-composer">
           <span>

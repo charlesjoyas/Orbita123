@@ -64,7 +64,7 @@ const server = createServer({ requestTimeout: 30_000, headersTimeout: 10_000 }, 
     }
     const asset = /^\/assets\/[\w.-]+\.(js|css)$/.test(pathname);
     const publicFile = /^\/(sw\.js|manifest\.webmanifest|icon\.svg|icon-(192|512)\.png)$/.test(pathname);
-    if (pathname !== "/" && !asset && !publicFile) {
+    if (pathname !== "/" && pathname !== "/design.html" && !asset && !publicFile) {
       res.writeHead(404).end();
       return;
     }

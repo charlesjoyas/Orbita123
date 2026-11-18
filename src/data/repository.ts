@@ -96,6 +96,14 @@ const listeners = new Set<(data: Data) => void>();
 export function configureRepository(repo: Repository) {
   activeRepository = repo;
 }
+export function rememberLocalUser(id: string) {
+  if (activeRepository !== localRepository) return;
+  try {
+    sessionStorage.setItem("orbita:identity", id);
+  } catch {
+    /* La preferencia local es opcional. */
+  }
+}
 export function publishData(data: Data) {
   listeners.forEach((listener) => listener(data));
 }

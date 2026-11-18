@@ -1,4 +1,4 @@
-const CACHE = "orbita-v4";
+const CACHE = "orbita-v5";
 const ASSET =
   /^(\/assets\/|\/icon(?:-\d+)?\.(?:svg|png)$|\/manifest\.webmanifest$)/;
 self.addEventListener("install", (event) => {
@@ -48,7 +48,7 @@ self.addEventListener("fetch", (event) => {
   )
     return;
   const navigation = event.request.mode === "navigate";
-  if (!navigation && !ASSET.test(url.pathname)) return;
+  if (navigation ? url.pathname !== "/" : !ASSET.test(url.pathname)) return;
   event.respondWith(
     (async () => {
       const cache = await caches.open(CACHE);

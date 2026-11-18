@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { fileURLToPath } from "node:url";
 import { localApi } from "./server/vite-api";
 export default defineConfig({
   plugins: [react(), localApi()],
@@ -12,6 +13,10 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
+      input: {
+        app: fileURLToPath(new URL("./index.html", import.meta.url)),
+        design: fileURLToPath(new URL("./design.html", import.meta.url)),
+      },
       output: {
         manualChunks: {
           react: ["react", "react-dom", "zustand"],

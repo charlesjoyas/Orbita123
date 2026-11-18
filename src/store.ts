@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { Data, Task } from "./types";
-import { repository } from "./data/repository";
+import { rememberLocalUser, repository } from "./data/repository";
 import { accessError } from "./auth/permissions";
 import { useIdentity } from "./auth/session";
 import { makeTask } from "./data/seed";
@@ -59,11 +59,7 @@ export const useStore = create<Store>((set, get) => ({
       get().notify(denied);
       return;
     }
-    try {
-      sessionStorage.setItem("orbita:identity", data.currentUser);
-    } catch {
-      /* Sesión opcional. */
-    }
+    rememberLocalUser(data.currentUser);
     data.activities = data.activities.slice(0, 1000);
     if (useIdentity.getState().user)
       for (const activity of data.activities)

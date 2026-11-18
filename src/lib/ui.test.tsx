@@ -90,6 +90,24 @@ describe("Creación desde la interfaz", () => {
       "all",
     );
   });
+  it("captura una tarea con persona, fecha y etiquetas elegidas en sus controles", async () => {
+    const user = userEvent.setup();
+    const board = useStore.getState().data.boards[0];
+    render(<QuickAdd boardId={board.id} columnId={board.columns[0].id} />);
+    await user.selectOptions(screen.getByLabelText("Asignar a"), "vale");
+    const date = screen.getByLabelText("Fecha rápida") as HTMLSelectElement;
+    const tomorrow = Array.from(date.options).find((option) => option.label === "Mañana")!.value;
+    await user.selectOptions(date, tomorrow);
+    await user.click(screen.getByText("Etiquetas", { exact: true }));
+    await user.type(screen.getByLabelText("Etiquetas separadas por comas"), "Producción, #Editorial");
+    await user.type(screen.getByLabelText("Crear tarea rápidamente"), "Ajustar portada #urgente{Enter}");
+    expect(useStore.getState().data.tasks.find((task) => task.title === "Ajustar portada")).toMatchObject({
+      assignee: "vale",
+      due: tomorrow,
+      priority: "urgente",
+      tags: ["Producción", "Editorial"],
+    });
+  });
   it("crear desde Mi día vuelve al tablero y muestra una tarea sin fecha", async () => {
     const user = userEvent.setup();
     render(<App />);
