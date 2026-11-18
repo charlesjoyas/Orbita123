@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useIdentity } from "../auth/session";
 import {
   CalendarDays,
   Check,
@@ -20,6 +21,7 @@ import {
 import { useStore } from "../store";
 import type { Priority, Recurrence, Task } from "../types";
 import { safeUrl, uid } from "../lib/utils";
+import { VERCEL_REQUEST_BYTES } from "../data/validation";
 import { Avatar, Modal } from "./UI";
 export default function TaskPanel({
   id,
@@ -32,6 +34,8 @@ export default function TaskPanel({
   onComplete: (id: string) => void;
   onFocus: (id: string) => void;
 }) {
+  const readOnly = useIdentity((s) => s.user?.role === "viewer");
+  const panel = useRef<HTMLDivElement>(null);
   const data = useStore((s) => s.data);
   const task = data.tasks.find((t) => t.id === id);
   const patch = useStore((s) => s.patchTask);
@@ -47,10 +51,15 @@ export default function TaskPanel({
   const [note, setNote] = useState("");
   const [passing, setPassing] = useState(false);
   const [recipient, setRecipient] = useState(
-    data.members.find((m) => m.id !== task?.assignee)?.id || data.currentUser,
+    data.members.find((m) => m.active !== false && m.id !== task?.assignee)?.id || data.currentUser,
   );
   const [link, setLink] = useState("");
   const [tab, setTab] = useState<"comments" | "history">("comments");
+  useEffect(() => {
+    panel.current
+      ?.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>("input,select,textarea")
+      .forEach((field) => (field.disabled = readOnly));
+  }, [readOnly, tab, passing, task?.checklist.length]);
   if (!task) return null;
   const board = data.boards.find((b) => b.id === task.boardId)!;
   function update(p: Partial<Task>, message?: string) {
@@ -92,17 +101,21 @@ export default function TaskPanel({
     const reader = new FileReader();
     reader.onerror = () =>
       notify("No pudimos leer ese archivo. Prueba a seleccionarlo de nuevo.");
-    reader.onload = () =>
-      update(
-        {
-          attachments: [
-            ...(useStore.getState().data.tasks.find((t) => t.id === id)
-              ?.attachments || []),
-            { id: uid(), name: file.name, url: reader.result as string },
-          ],
-        },
-        "Archivo adjuntado",
-      );
+    reader.onload = () => {
+      const current = useStore.getState().data;
+      const target = current.tasks.find((t) => t.id === id);
+      if (!target || typeof reader.result !== "string") return;
+      const attachment = { id: uid(), name: file.name, url: reader.result };
+      if (
+        useIdentity.getState().user &&
+        new Blob([JSON.stringify(current), JSON.stringify(attachment)]).size >
+          VERCEL_REQUEST_BYTES - 64 * 1024
+      ) {
+        notify("El espacio alcanzó el límite para archivos. Añade un enlace o retira otro adjunto.");
+        return;
+      }
+      update({ attachments: [...target.attachments, attachment] }, "Archivo adjuntado");
+    };
     reader.readAsDataURL(file);
   }
   return (
@@ -111,7 +124,7 @@ export default function TaskPanel({
       onClose={onClose}
       wide
     >
-      <div className="task-panel">
+      <div ref={panel} className="task-panel">
         <div className="detail-title">
           <button
             className={`complete-circle big ${task.completedAt ? "checked" : ""}`}
@@ -137,8 +150,16 @@ export default function TaskPanel({
           <button
             className={task.focus.includes(data.currentUser) ? "selected" : ""}
             onClick={() => {
-              if(!task.focus.includes(data.currentUser)&&(task.assignee!==data.currentUser||task.completedAt)){
-                notify(task.completedAt?'Esa tarea ya está lista. Elige una pendiente para tu foco 🌿':'Para traerla a tu foco, asígnatela primero.');return;
+              if (
+                !task.focus.includes(data.currentUser) &&
+                (task.assignee !== data.currentUser || task.completedAt)
+              ) {
+                notify(
+                  task.completedAt
+                    ? "Esa tarea ya está lista. Elige una pendiente para tu foco 🌿"
+                    : "Para traerla a tu foco, asígnatela primero.",
+                );
+                return;
               }
               const focuses = data.tasks.filter(
                 (t) => t.focus.includes(data.currentUser) && !t.completedAt,
@@ -221,7 +242,7 @@ export default function TaskPanel({
                 value={recipient}
                 onChange={(e) => setRecipient(e.target.value)}
               >
-                {data.members.map((m) => (
+                {data.members.filter((m) => m.active !== false).map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.emoji} {m.name}
                   </option>
@@ -246,9 +267,9 @@ export default function TaskPanel({
                 update({ assignee: e.target.value }, `reasignó «${task.title}»`)
               }
             >
-              {data.members.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.emoji} {m.name}
+              {data.members.filter((m) => m.active !== false || m.id === task.assignee).map((m) => (
+                <option key={m.id} value={m.id} disabled={m.active === false}>
+                  {m.emoji} {m.name}{m.active === false ? " (cuenta inactiva)" : ""}
                 </option>
               ))}
             </select>
@@ -468,7 +489,7 @@ export default function TaskPanel({
             <div className="attachment" key={a.id}>
               <a
                 href={a.url.startsWith("data:") ? a.url : safeUrl(a.url) || "#"}
-                target="_blank"
+                target={a.url.startsWith("data:") ? undefined : "_blank"}
                 rel="noreferrer"
                 download={a.url.startsWith("data:") ? a.name : undefined}
               >

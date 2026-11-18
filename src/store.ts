@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import type { Data, Task } from "./types";
-import { localRepository } from "./data/repository";
+import { repository } from "./data/repository";
+import { accessError } from "./auth/permissions";
+import { useIdentity } from "./auth/session";
 import { makeTask } from "./data/seed";
 import { today, uid } from "./lib/utils";
 import {
@@ -33,7 +35,7 @@ interface Store {
   notify: (message: string) => void;
 }
 export const useStore = create<Store>((set, get) => ({
-  data: localRepository.load(),
+  data: repository.load(),
   past: [],
   future: [],
   toast: "",
@@ -42,21 +44,33 @@ export const useStore = create<Store>((set, get) => ({
   commit(edit, message = "") {
     const before = get().data;
     const data = structuredClone(before);
-    if (data.focusDate && data.focusDate !== today())
+    if (
+      useIdentity.getState().user?.role !== "viewer" &&
+      data.focusDate &&
+      data.focusDate !== today()
+    )
       data.tasks.forEach((t) => {
         t.focus = [];
       });
     data.focusDate = today();
     edit(data);
+    const denied = accessError(before, data);
+    if (denied) {
+      get().notify(denied);
+      return;
+    }
     try {
       sessionStorage.setItem("orbita:identity", data.currentUser);
     } catch {
       /* Sesión opcional. */
     }
     data.activities = data.activities.slice(0, 1000);
+    if (useIdentity.getState().user)
+      for (const activity of data.activities)
+        if (activity.actor === data.currentUser) activity.unread = false;
     let storageError = false;
     try {
-      localRepository.save(data);
+      repository.save(data);
     } catch {
       storageError = true;
     }
@@ -78,8 +92,13 @@ export const useStore = create<Store>((set, get) => ({
     const prev = structuredClone(snapshot);
     if (prev.members.some((m) => m.id === data.currentUser))
       prev.currentUser = data.currentUser;
+    const denied = accessError(data, prev);
+    if (denied) {
+      get().notify(denied);
+      return;
+    }
     try {
-      localRepository.save(prev);
+      repository.save(prev);
     } catch {
       get().notify("No se pudo guardar el cambio");
       return;
@@ -100,8 +119,13 @@ export const useStore = create<Store>((set, get) => ({
     const next = structuredClone(snapshot);
     if (next.members.some((m) => m.id === data.currentUser))
       next.currentUser = data.currentUser;
+    const denied = accessError(data, next);
+    if (denied) {
+      get().notify(denied);
+      return;
+    }
     try {
-      localRepository.save(next);
+      repository.save(next);
     } catch {
       get().notify("No se pudo guardar el cambio");
       return;
@@ -118,6 +142,13 @@ export const useStore = create<Store>((set, get) => ({
   patchTask(id, patch, message) {
     const original = get().data.tasks.find((t) => t.id === id);
     if (!original) return;
+    if (
+      patch.assignee && patch.assignee !== original.assignee &&
+      !get().data.members.some((m) => m.id === patch.assignee && m.active !== false)
+    ) {
+      get().notify("Selecciona una cuenta activa para asignar la tarea.");
+      return;
+    }
     get().commit((d) => {
       const t = d.tasks.find((t) => t.id === id);
       if (!t) return;
@@ -129,7 +160,8 @@ export const useStore = create<Store>((set, get) => ({
         ...fields
       } = patch;
       Object.assign(t, fields);
-      if(fields.assignee)t.focus=t.focus.filter(member=>member===t.assignee);
+      if (fields.assignee)
+        t.focus = t.focus.filter((member) => member === t.assignee);
       if (columnId && columnId !== t.columnId) moveTaskData(d, id, columnId);
       const board = d.boards.find((b) => b.id === t.boardId);
       if (board && !board.members.includes(t.assignee))
@@ -170,7 +202,9 @@ export const useStore = create<Store>((set, get) => ({
       task.boardId,
       targetColumn,
       step.text,
-      task.assignee,
+      get().data.members.some((m) => m.active !== false && m.id === task.assignee)
+        ? task.assignee
+        : get().data.currentUser,
     );
     child.creator = get().data.currentUser;
     get().commit((d) => {
@@ -183,6 +217,10 @@ export const useStore = create<Store>((set, get) => ({
     return child.id;
   },
   setCurrentUser(id) {
+    if (useIdentity.getState().user) {
+      get().notify("Para cambiar de cuenta, cierra tu sesión.");
+      return;
+    }
     if (!get().data.members.some((m) => m.id === id)) return;
     try {
       sessionStorage.setItem("orbita:identity", id);
@@ -201,6 +239,10 @@ export const useStore = create<Store>((set, get) => ({
     }, "Tarea eliminada");
   },
   addTask(boardId, columnId, title, patch = {}) {
+    if (useIdentity.getState().user?.role === "viewer") {
+      get().notify("Tu cuenta tiene acceso de solo lectura.");
+      return "";
+    }
     const board = get().data.boards.find((b) => b.id === boardId);
     const clean = (patch.title ?? title).trim();
     if (!board || !board.columns.some((c) => c.id === columnId) || !clean) {
@@ -219,13 +261,13 @@ export const useStore = create<Store>((set, get) => ({
       movedAt: new Date().toISOString(),
       completedAt: undefined,
     };
-    if (!get().data.members.some((m) => m.id === t.assignee))
+    if (!get().data.members.some((m) => m.active !== false && m.id === t.assignee))
       t.assignee = get().data.currentUser;
     t.tags = [...new Set(t.tags)];
     get().commit(
       (d) => {
-        const first=d.tasks.findIndex(x=>x.columnId===columnId);
-        d.tasks.splice(first<0?d.tasks.length:first,0,t);
+        const first = d.tasks.findIndex((x) => x.columnId === columnId);
+        d.tasks.splice(first < 0 ? d.tasks.length : first, 0, t);
         const b = d.boards.find((b) => b.id === boardId)!;
         if (!b.members.includes(t.assignee)) b.members.push(t.assignee);
         record(d, t, "creó «" + clean + "»");
@@ -239,7 +281,7 @@ export const useStore = create<Store>((set, get) => ({
     set({ toast, toastUndo: false });
   },
 }));
-localRepository.subscribe((data) => {
+repository.subscribe((data) => {
   const identity = useStore.getState().data.currentUser;
   if (data.members.some((m) => m.id === identity)) data.currentUser = identity;
   useStore.setState({

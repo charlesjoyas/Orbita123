@@ -18,6 +18,7 @@ import type { Task } from "../types";
 import { useStore } from "../store";
 import { dueLabel, isLate, today } from "../lib/utils";
 import { Avatar } from "./UI";
+import { useIdentity } from "../auth/session";
 export const tagColor = (tag: string) =>
   ["Diseño", "Producto"].includes(tag)
     ? "purple"
@@ -37,6 +38,7 @@ export default memo(function TaskCard({
   onComplete: (id: string) => void;
   overlay?: boolean;
 }) {
+  const readOnly = useIdentity((s) => s.user?.role === "viewer");
   const {
     attributes,
     listeners,
@@ -47,7 +49,7 @@ export default memo(function TaskCard({
   } = useSortable({
     id: task.id,
     data: { type: "task", task },
-    disabled: overlay,
+    disabled: overlay || readOnly,
   });
   const data = useStore((s) => s.data);
   const patch = useStore((s) => s.patchTask);
@@ -80,6 +82,7 @@ export default memo(function TaskCard({
     >
       <motion.article
         onTouchStart={(e) => {
+          if (readOnly) return;
           if ((e.target as HTMLElement).closest("button,input")) return;
           touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
         }}
@@ -100,7 +103,7 @@ export default memo(function TaskCard({
               suppressClick.current = true;
               if (dx > 0 && !task.completedAt) onComplete(task.id);
               else if (dx < 0) {
-                const other = data.members.find((m) => m.id !== task.assignee);
+                const other = data.members.find((m) => m.active !== false && m.id !== task.assignee);
                 if (other)
                   patch(
                     task.id,
@@ -250,6 +253,10 @@ export default memo(function TaskCard({
                 onDoubleClick={(e) => {
                   e.stopPropagation();
                   if (clickTimer.current) clearTimeout(clickTimer.current);
+                  if (readOnly) {
+                    onOpen(task.id);
+                    return;
+                  }
                   setTitle(task.title);
                   setEditing(true);
                 }}
@@ -313,7 +320,7 @@ export default memo(function TaskCard({
                 onClick={(e) => {
                   e.stopPropagation();
                   const other = data.members.find(
-                    (m) => m.id !== task.assignee,
+                    (m) => m.active !== false && m.id !== task.assignee,
                   );
                   if (other)
                     patch(

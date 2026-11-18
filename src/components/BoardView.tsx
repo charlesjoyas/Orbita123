@@ -28,6 +28,7 @@ import TaskCard from "./TaskCard";
 import { Empty } from "./UI";
 import QuickAdd from "./QuickAdd";
 import { useStore } from "../store";
+import { useIdentity } from "../auth/session";
 function BoardColumn({
   column,
   tasks,
@@ -45,7 +46,12 @@ function BoardColumn({
   onEdit: (c: Column) => void;
   onAdd: (id: string) => void;
 }) {
-  const sortable = useSortable({ id: column.id, data: { type: "column" } });
+  const role = useIdentity((s) => s.user?.role);
+  const sortable = useSortable({
+    id: column.id,
+    data: { type: "column" },
+    disabled: !!role && role !== "admin",
+  });
   const { setNodeRef, isOver } = useDroppable({
     id: `drop-${column.id}`,
     data: { columnId: column.id },
@@ -69,7 +75,13 @@ function BoardColumn({
     >
       <header className="column-header">
         <span className="column-emoji">{column.emoji}</span>
-        <h2 onDoubleClick={() => onEdit(column)}>{column.name}</h2>
+        <h2
+          onDoubleClick={() => {
+            if (!role || role === "admin") onEdit(column);
+          }}
+        >
+          {column.name}
+        </h2>
         <span className="column-count">{count}</span>
         <button
           {...sortable.attributes}

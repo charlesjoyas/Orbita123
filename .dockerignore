@@ -1,0 +1,10 @@
+.git
+.openai
+node_modules
+dist
+.data
+.sites-runtime
+.env*
+*.zip
+*.sqlite*
+*.tsbuildinfo

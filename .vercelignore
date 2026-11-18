@@ -1,0 +1,5 @@
+.env*
+.data/
+.sites-runtime/
+*.sqlite*
+*.zip

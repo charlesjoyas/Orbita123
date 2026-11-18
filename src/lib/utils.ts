@@ -70,10 +70,10 @@ export function parseQuick(
     const key = mention[1].toLowerCase();
     const person =
       members.find(
-        (m) => m.name.toLowerCase().startsWith(key) || m.id === key,
+        (m) => m.active !== false && (m.name.toLowerCase().startsWith(key) || m.id === key),
       ) ||
       (key === "ella" || key === "el"
-        ? members.find((m) => m.id !== currentUser)
+        ? members.find((m) => m.active !== false && m.id !== currentUser)
         : undefined);
     if (person) {
       assignee = person.id;

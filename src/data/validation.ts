@@ -1,5 +1,7 @@
 import type { Data } from "../types";
-import { isValidDue } from "../lib/utils";
+import { isValidDue } from "../lib/utils.ts";
+export const MAX_REQUEST_BYTES = 6 * 1024 * 1024;
+export const VERCEL_REQUEST_BYTES = 4 * 1024 * 1024;
 
 type Obj = Record<string, unknown>;
 const object = (v: unknown): v is Obj =>
@@ -32,6 +34,7 @@ export function isData(v: unknown): v is Data {
         text(m, "id", "name", "emoji", "color", "status") &&
         !!String(m.name).trim() &&
         /^#[\da-f]{6}$/i.test(String(m.color)) &&
+        (m.active === undefined || typeof m.active === "boolean") &&
         ["disponible", "en foco", "fuera"].includes(String(m.status)),
     ) ||
     !v.members.length ||

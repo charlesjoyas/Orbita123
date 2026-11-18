@@ -1,4 +1,4 @@
-const CACHE = "orbita-v2";
+const CACHE = "orbita-v3";
 const ASSET =
   /^(\/assets\/|\/icon(?:-\d+)?\.(?:svg|png)$|\/manifest\.webmanifest$)/;
 self.addEventListener("install", (event) => {
@@ -40,7 +40,12 @@ self.addEventListener("activate", (event) =>
 );
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
-  if (event.request.method !== "GET" || url.origin !== self.location.origin)
+  if (
+    event.request.method !== "GET" ||
+    url.origin !== self.location.origin ||
+    url.pathname === "/api" ||
+    url.pathname.startsWith("/api/")
+  )
     return;
   const navigation = event.request.mode === "navigate";
   if (!navigation && !ASSET.test(url.pathname)) return;

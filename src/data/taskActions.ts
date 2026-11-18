@@ -33,6 +33,10 @@ export function finishTask(data: Data, id: string) {
     data.tasks.push({
       ...structuredClone(task),
       id: uid(),
+      creator: data.currentUser,
+      assignee: data.members.some((m) => m.active !== false && m.id === task.assignee)
+        ? task.assignee
+        : data.currentUser,
       columnId: board.columns[0].id,
       due: nextDue(task.due, task.recurrence),
       completedAt: undefined,

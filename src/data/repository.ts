@@ -5,6 +5,8 @@ import { isData } from "./validation";
 export let repositoryWarning = "";
 let recoveryRaw: string | null = null;
 export function getRecoveryData() {
+  if (activeRepository !== localRepository)
+    return activeRepository.recovery?.() ?? null;
   try {
     return recoveryRaw || localStorage.getItem("orbita:recovery");
   } catch {
@@ -13,13 +15,15 @@ export function getRecoveryData() {
 }
 function resetFocus(data: Data) {
   // Repara inconsistencias que podía dejar el antiguo Deshacer de arrastre.
-  for(const task of data.tasks){
-    const board=data.boards.find(b=>b.id===task.boardId)!;
-    if(!board.members.includes(task.assignee))board.members.push(task.assignee);
-    if(task.columnId===board.columns.at(-1)!.id)task.completedAt ||= task.movedAt;
-    else task.completedAt=undefined;
-    task.focus=task.focus.filter(member=>member===task.assignee);
-    task.tags=[...new Set(task.tags)];
+  for (const task of data.tasks) {
+    const board = data.boards.find((b) => b.id === task.boardId)!;
+    if (!board.members.includes(task.assignee))
+      board.members.push(task.assignee);
+    if (task.columnId === board.columns.at(-1)!.id)
+      task.completedAt ||= task.movedAt;
+    else task.completedAt = undefined;
+    task.focus = task.focus.filter((member) => member === task.assignee);
+    task.tags = [...new Set(task.tags)];
   }
   if (data.focusDate && data.focusDate !== today())
     data.tasks.forEach((t) => {
@@ -39,6 +43,7 @@ export interface Repository {
   load(): Data;
   save(data: Data): void;
   subscribe(listener: (data: Data) => void): () => void;
+  recovery?: () => string | null;
 }
 const KEY = "orbita:data:v1";
 export const localRepository: Repository = {
@@ -84,5 +89,24 @@ export const localRepository: Repository = {
     };
     window.addEventListener("storage", handler);
     return () => window.removeEventListener("storage", handler);
+  },
+};
+let activeRepository: Repository = localRepository;
+const listeners = new Set<(data: Data) => void>();
+export function configureRepository(repo: Repository) {
+  activeRepository = repo;
+}
+export function publishData(data: Data) {
+  listeners.forEach((listener) => listener(data));
+}
+localRepository.subscribe((data) => {
+  if (activeRepository === localRepository) publishData(data);
+});
+export const repository: Repository = {
+  load: () => activeRepository.load(),
+  save: (data) => activeRepository.save(data),
+  subscribe(listener) {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
   },
 };

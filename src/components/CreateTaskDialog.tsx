@@ -55,7 +55,7 @@ export default function CreateTaskDialog({
               value={assignee}
               onChange={(e) => setAssignee(e.target.value)}
             >
-              {members.map((m) => (
+              {members.filter((m) => m.active !== false).map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.emoji} {m.name}
                 </option>

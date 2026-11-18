@@ -28,7 +28,7 @@ function worker(fetchImpl) {
     self,
     caches: {
       open: async () => cache,
-      keys: async () => ["another-app", "orbita-v1", "orbita-v2"],
+      keys: async () => ["another-app", "orbita-v1", "orbita-v2", "orbita-v3"],
       delete: async (key) => deleted.push(key),
     },
     fetch: fetchImpl,
@@ -77,6 +77,15 @@ describe("Caché offline", () => {
     let activation;
     w.events.activate({ waitUntil: (p) => (activation = p) });
     await activation;
-    expect(w.deleted).toEqual(["orbita-v1"]);
+    expect(w.deleted).toEqual(["orbita-v1", "orbita-v2"]);
+  });
+  it("nunca intercepta la API, incluso al navegar directamente a una ruta protegida", () => {
+    const w = worker(vi.fn());
+    const respondWith = vi.fn();
+    w.events.fetch({
+      request: { method: "GET", url: "https://orbita.test/api/state", mode: "navigate" },
+      respondWith,
+    });
+    expect(respondWith).not.toHaveBeenCalled();
   });
 });

@@ -50,6 +50,10 @@ import BoardView from "./components/BoardView";
 import QuickAdd from "./components/QuickAdd";
 import TaskPanel from "./components/TaskPanel";
 import Views from "./components/Views";
+import TeamAccounts from "./auth/TeamAccounts";
+import AccountSettings from "./auth/AccountSettings";
+import { roleLabel, useIdentity } from "./auth/session";
+import { retrySave } from "./auth/remote";
 import { readPreference, writePreference } from "./lib/preferences";
 import CreateTaskDialog from "./components/CreateTaskDialog";
 import { isData } from "./data/validation";
@@ -72,6 +76,7 @@ const backgrounds = [
   { id: "dots", name: "Papel", color: "#e5e5ed" },
 ];
 function App() {
+  const account = useIdentity((s) => s.user);
   const data = useStore((s) => s.data);
   const notify = useStore((s) => s.notify);
   const storageError = useStore((s) => s.storageError);
@@ -254,9 +259,15 @@ function App() {
     const task = useStore.getState().data.tasks.find((t) => t.id === id);
     if (!task) return;
     changeBoard(task.boardId);
-    const kanban=document.querySelector<HTMLElement>('.kanban');
-    const column=kanban?.querySelector<HTMLElement>(`[data-column-id="${task.columnId}"]`);
-    if(kanban&&column)kanban.scrollTo?.({left:column.offsetLeft-kanban.offsetLeft,behavior:'smooth'});
+    const kanban = document.querySelector<HTMLElement>(".kanban");
+    const column = kanban?.querySelector<HTMLElement>(
+      `[data-column-id="${task.columnId}"]`,
+    );
+    if (kanban && column)
+      kanban.scrollTo?.({
+        left: column.offsetLeft - kanban.offsetLeft,
+        behavior: "smooth",
+      });
   };
   const allTasks = data.tasks.filter((t) => t.boardId === board.id);
   const tasks = useMemo(
@@ -311,7 +322,9 @@ function App() {
   const clearToast = useCallback(() => useStore.setState({ toast: "" }), []);
   return (
     <MotionConfig reducedMotion="user">
-      <div className={`app bg-${board.background}`}>
+      <div
+        className={`app bg-${board.background} role-${account?.role || "local"}`}
+      >
         <aside className="sidebar">
           <a
             className="brand"
@@ -467,6 +480,17 @@ function App() {
           </div>
         </aside>
         <div className="main-shell">
+          {account && (
+            <div className="session-bar">
+              <span>
+                Sesión de <strong>{account.name}</strong>
+              </span>
+              <span className="role-badge">{roleLabel[account.role]}</span>
+              {storageError && (
+                <button onClick={retrySave}>Reintentar guardado</button>
+              )}
+            </div>
+          )}
           <header className="topbar">
             <div className="breadcrumb">
               <span>Nuestro espacio</span>
@@ -495,7 +519,7 @@ function App() {
                 {storageError
                   ? "Cambios sin guardar"
                   : online
-                    ? "Guardado en este navegador"
+                    ? "Espacio compartido"
                     : "Sin conexión"}
               </span>
               <button
@@ -625,14 +649,16 @@ function App() {
                   >
                     <Redo2 size={15} /> Rehacer
                   </button>
-                  <button
-                    onClick={() => {
-                      setDialog("onboarding");
-                      setMenu(false);
-                    }}
-                  >
-                    <Sparkles size={15} /> Presentar mi espacio
-                  </button>
+                  {!account && (
+                    <button
+                      onClick={() => {
+                        setDialog("onboarding");
+                        setMenu(false);
+                      }}
+                    >
+                      <Sparkles size={15} /> Presentar mi espacio
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -990,7 +1016,7 @@ function App() {
             />
           )}
           {dialog === "team" && (
-            <TeamDialog board={board} onClose={() => setDialog(null)} />
+            <TeamAccounts onClose={() => setDialog(null)} />
           )}
           {dialog === "settings" && (
             <SettingsDialog
@@ -1344,99 +1370,6 @@ function ColumnDialog({
     </Modal>
   );
 }
-function TeamDialog({ board, onClose }: { board: Board; onClose: () => void }) {
-  const data = useStore((s) => s.data);
-  const commit = useStore((s) => s.commit);
-  const [name, setName] = useState("");
-  const [emoji, setEmoji] = useState("🦊");
-  const [color, setColor] = useState("#7aa8b1");
-  return (
-    <Modal title="La gente que hace la magia" onClose={onClose}>
-      <div className="dialog-content">
-        <h2>Nuestra pequeña órbita</h2>
-        <p>Hasta 10 personas, cada una con su propio color.</p>
-        <div className="team-dialog-list">
-          {data.members.map((m) => (
-            <div key={m.id}>
-              <Avatar member={m} />
-              <span>
-                <strong>{m.name}</strong>
-                <small>{m.status}</small>
-              </span>
-              <button
-                className="text-button"
-                onClick={() => useStore.getState().setCurrentUser(m.id)}
-              >
-                {m.id === data.currentUser ? "Eres tú" : "Ver como"}
-              </button>
-            </div>
-          ))}
-        </div>
-        <div className="info-note">
-          <strong>Modo local compartido</strong>
-          <p>
-            Los perfiles viven en este navegador y se actualizan entre sus
-            pestañas. Las invitaciones y la colaboración entre dispositivos
-            requieren conectar un backend. Puedes exportar una copia desde tu
-            perfil.
-          </p>
-        </div>
-        {data.members.length < 10 && (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!name.trim()) return;
-              commit((d) => {
-                const id = uid();
-                d.members.push({
-                  id,
-                  name: name.trim(),
-                  emoji,
-                  color,
-                  status: "disponible",
-                });
-                d.boards.find((b) => b.id === board.id)!.members.push(id);
-              }, "¡Hay alguien nuevo en la órbita! ✨");
-              setName("");
-            }}
-          >
-            <label>
-              Nombre de la persona
-              <input
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="¿Quién se suma?"
-                maxLength={30}
-              />
-            </label>
-            <div className="two-fields">
-              <label>
-                Su emoji
-                <input
-                  value={emoji}
-                  onChange={(e) => setEmoji(e.target.value)}
-                  maxLength={8}
-                />
-              </label>
-              <label>
-                Su color
-                <input
-                  type="color"
-                  value={color}
-                  onChange={(e) => setColor(e.target.value)}
-                />
-              </label>
-            </div>
-            <button className="primary full">
-              Añadir perfil local <Plus size={16} />
-            </button>
-          </form>
-        )}
-      </div>
-    </Modal>
-  );
-}
 function SettingsDialog({
   board,
   dark,
@@ -1450,6 +1383,8 @@ function SettingsDialog({
   onClose: () => void;
   changeBoard: (id: string) => void;
 }) {
+  const role = useIdentity((s) => s.user?.role);
+  const admin = !role || role === "admin";
   const data = useStore((s) => s.data);
   const commit = useStore((s) => s.commit);
   const notify = useStore((s) => s.notify);
@@ -1479,6 +1414,7 @@ function SettingsDialog({
   return (
     <Modal title="Hazlo un poquito más tuyo" onClose={onClose}>
       <div className="dialog-content settings-dialog">
+        <AccountSettings />
         <h2>Tu espacio, tu ritmo.</h2>
         <div className="settings-profile">
           <Avatar member={user} size="large" />
@@ -1591,11 +1527,12 @@ function SettingsDialog({
           Los avisos remotos con la app cerrada requieren un servidor push.
         </p>
         <hr />
-        <h3>{board.emoji} Este tablero</h3>
+        <h3 className="board-settings-heading">{board.emoji} Este tablero</h3>
         <label>
           Nombre
           <input
             defaultValue={board.name}
+            disabled={!admin}
             onBlur={(e) => {
               if (e.target.value.trim())
                 commit((d) => {
@@ -1611,6 +1548,7 @@ function SettingsDialog({
             <button
               key={b.id}
               style={{ background: b.color }}
+              disabled={!admin}
               aria-pressed={board.background === b.id}
               onClick={() =>
                 commit((d) => {
@@ -1644,28 +1582,30 @@ function SettingsDialog({
         <button className="secondary full" onClick={exportData}>
           <ArrowDownToLine size={15} /> Exportar copia del espacio
         </button>
-        <label className="file-button">
-          Leer una copia JSON
-          <input
-            type="file"
-            accept="application/json,.json"
-            onChange={async (e) => {
-              const f = e.target.files?.[0];
-              e.target.value = "";
-              setImportText("");
-              if (!f) return;
-              try {
-                const text = await f.text();
-                const parsed = JSON.parse(text);
-                if (!isData(parsed)) throw Error();
-                setImportText(text);
-              } catch {
-                notify("Ese archivo no es una copia válida de Órbita.");
-              }
-            }}
-          />
-        </label>
-        {importText && (
+        {admin && (
+          <label className="file-button">
+            Leer una copia JSON
+            <input
+              type="file"
+              accept="application/json,.json"
+              onChange={async (e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                setImportText("");
+                if (!f) return;
+                try {
+                  const text = await f.text();
+                  const parsed = JSON.parse(text);
+                  if (!isData(parsed)) throw Error();
+                  setImportText(text);
+                } catch {
+                  notify("Ese archivo no es una copia válida de Órbita.");
+                }
+              }}
+            />
+          </label>
+        )}
+        {admin && importText && (
           <div className="confirm-box">
             <p>
               Esta copia reemplazará el espacio actual. Puedes deshacer el
@@ -1674,7 +1614,18 @@ function SettingsDialog({
             <button
               className="secondary"
               onClick={() => {
-                const next = JSON.parse(importText);
+                const next = JSON.parse(importText) as typeof data;
+                if (role) {
+                  const known = new Set(data.members.map((m) => m.id));
+                  if (!next.members.every((m) => known.has(m.id))) {
+                    notify("Esta copia pertenece a otro espacio. Puedes usarla al configurar una base vacía.");
+                    return;
+                  }
+                  next.currentUser = data.currentUser;
+                  next.members = data.members;
+                  const active = data.boards[0].members;
+                  next.boards.forEach((b) => { b.members = active; });
+                }
                 commit((d) => Object.assign(d, next), "Copia importada");
                 changeBoard(next.boards[0].id);
                 onClose();
@@ -1684,7 +1635,7 @@ function SettingsDialog({
             </button>
           </div>
         )}
-        {data.boards.length > 1 && (
+        {admin && data.boards.length > 1 && (
           <>
             <hr />
             {deleting ? (

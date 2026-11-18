@@ -6,6 +6,7 @@ export interface Member {
   emoji: string;
   color: string;
   status: "disponible" | "en foco" | "fuera";
+  active?: boolean;
 }
 export interface Column {
   id: string;

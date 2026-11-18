@@ -1,5 +1,5 @@
 import type { Board, Data, Task } from "../types";
-import { localDate, today, uid } from "../lib/utils";
+import { localDate, today, uid } from "../lib/utils.ts";
 export function columns(): Board["columns"] {
   return [
     { id: uid(), name: "Por hacer", emoji: "💡", color: "#ad91d9" },
