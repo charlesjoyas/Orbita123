@@ -20,7 +20,8 @@ function worker(fetchImpl) {
   const deleted = [];
   const self = {
     location: { origin: "https://orbita.test" },
-    clients: { claim: vi.fn() },
+    clients: { claim: vi.fn(), matchAll: vi.fn(async () => []), openWindow: vi.fn() },
+    registration: { showNotification: vi.fn(async () => {}) },
     skipWaiting: vi.fn(),
     addEventListener: (name, fn) => (events[name] = fn),
   };
@@ -28,14 +29,14 @@ function worker(fetchImpl) {
     self,
     caches: {
       open: async () => cache,
-      keys: async () => ["another-app", "orbita-v1", "orbita-v2", "orbita-v3"],
+      keys: async () => ["another-app", "orbita-v1", "orbita-v2", "orbita-v3", "orbita-v4"],
       delete: async (key) => deleted.push(key),
     },
     fetch: fetchImpl,
     URL,
     Response,
   });
-  return { events, items, cache, deleted };
+  return { events, items, cache, deleted, self };
 }
 describe("Caché offline", () => {
   it("no reemplaza la aplicación offline por la página de inicio de sesión", async () => {
@@ -77,7 +78,7 @@ describe("Caché offline", () => {
     let activation;
     w.events.activate({ waitUntil: (p) => (activation = p) });
     await activation;
-    expect(w.deleted).toEqual(["orbita-v1", "orbita-v2"]);
+    expect(w.deleted).toEqual(["orbita-v1", "orbita-v2", "orbita-v3"]);
   });
   it("nunca intercepta la API, incluso al navegar directamente a una ruta protegida", () => {
     const w = worker(vi.fn());
@@ -88,4 +89,25 @@ describe("Caché offline", () => {
     });
     expect(respondWith).not.toHaveBeenCalled();
   });
+});
+
+it("muestra el aviso y abre la tarea en el mismo origen", async () => {
+  const w = worker(vi.fn());
+  let work;
+  w.events.push({
+    data: { json: () => ({ taskId: "task/42", tag: "assignment-1" }) },
+    waitUntil: (promise) => (work = promise),
+  });
+  await work;
+  const [title, notification] = w.self.registration.showNotification.mock.calls[0];
+  expect(title).toBe("Órbita");
+  expect(notification.data.taskId).toBe("task/42");
+  const close = vi.fn();
+  w.events.notificationclick({
+    notification: { ...notification, close },
+    waitUntil: (promise) => (work = promise),
+  });
+  await work;
+  expect(close).toHaveBeenCalled();
+  expect(w.self.clients.openWindow).toHaveBeenCalledWith("https://orbita.test/?task=task%2F42");
 });

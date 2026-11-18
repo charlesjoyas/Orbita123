@@ -9,7 +9,7 @@ import { openDatabase } from "./db";
 export function localApi(): Plugin {
   const configure = (server: ViteDevServer | PreviewServer) => {
     const vars = loadEnv("development", process.cwd(), "");
-    for (const key of ["APP_ORIGIN", "SETUP_TOKEN", "ORBITA_DB_PATH"])
+    for (const key of ["APP_ORIGIN", "SETUP_TOKEN", "ORBITA_DB_PATH", "PUSH_PUBLIC_KEY", "PUSH_PRIVATE_KEY", "PUSH_SUBJECT"])
       if (vars[key] && !process.env[key]) process.env[key] = vars[key];
     let runtime: ReturnType<typeof handlerFor> | undefined;
     server.middlewares.use(async (req, res, next) => {

@@ -13,6 +13,7 @@ import { useStore } from "../store";
 import { seedData } from "../data/seed";
 import type { Data } from "../types";
 import { isData } from "../data/validation";
+import { deviceSubscription } from "../lib/push";
 export function acceptSession(result: SessionResult) {
   if (!result.user || !result.data || result.revision === undefined)
     throw Error("La sesión no contiene un espacio válido.");
@@ -22,7 +23,8 @@ export function acceptSession(result: SessionResult) {
     history.replaceState(null, "", location.pathname);
 }
 export async function logout() {
-  await api("logout", "POST", {});
+  const device = await deviceSubscription().catch(() => null);
+  await api("logout", "POST", { endpoint: device?.endpoint });
   stopRemote();
   useIdentity.setState({ user: null, ready: true, expired: false });
   useStore.setState({

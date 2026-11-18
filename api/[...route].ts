@@ -1,4 +1,5 @@
 import { createApi } from "../server/api.ts";
+import { waitUntil } from "@vercel/functions";
 import { openTurso } from "../server/turso.ts";
 import { VERCEL_REQUEST_BYTES } from "../src/data/validation.ts";
 
@@ -9,7 +10,7 @@ async function initialize() {
   if (url.protocol !== "https:" || url.origin !== origin)
     throw Error("Configura APP_ORIGIN con el origen HTTPS exacto de Órbita.");
   const db = await openTurso();
-  return createApi(db, { origin, maxRequestBytes: VERCEL_REQUEST_BYTES });
+  return createApi(db, { origin, maxRequestBytes: VERCEL_REQUEST_BYTES, background: waitUntil });
 }
 
 async function handle(request: Request): Promise<Response> {

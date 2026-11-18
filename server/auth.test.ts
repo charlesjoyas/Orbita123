@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { openDatabase, type Database } from "./db";
 import { createApi, prepareDatabase } from "./api";
 import type { Data } from "../src/types";
@@ -12,6 +12,7 @@ let viewer = "";
 let viewerId = "";
 let usedInvite = "";
 const password = "Prueba local segura 2026!";
+const sendPush = vi.fn(async () => {});
 const cookie = (res: Response) => res.headers.get("set-cookie")!.split(";")[0];
 async function call(
   path: string,
@@ -41,7 +42,10 @@ async function invite(email: string, role: string) {
 beforeAll(async () => {
   db = await openDatabase(":memory:");
   await prepareDatabase(db);
-  api = createApi(db, { localSetup: true, origin: "http://orbita.test" });
+  api = createApi(db, {
+    localSetup: true, origin: "http://orbita.test",
+    pushTransport: { publicKey: "public-key-test", send: sendPush },
+  });
   const first = await call("setup", "POST", {
     email: "admin@orbita.test",
     name: "Admin de prueba",
@@ -279,5 +283,30 @@ describe("Cuentas, sesiones y permisos del servidor", () => {
     const session = cookie(login);
     expect((await call("logout", "POST", {}, session)).status).toBe(200);
     expect((await call("state", "GET", undefined, session)).status).toBe(401);
+  });
+  it("avisa solo al destinatario suscrito después de guardar la asignación", async () => {
+    const endpoint = "https://fcm.googleapis.com/fcm/send/editor-prueba";
+    const endpointAdmin = "https://fcm.googleapis.com/fcm/send/admin-prueba";
+    const keys = { p256dh: Buffer.alloc(65, 4).toString("base64url"), auth: Buffer.alloc(16).toString("base64url") };
+    expect((await call("push", "GET")).status).toBe(401);
+    expect((await call("push", "PUT", { endpoint: "https://127.0.0.1/test", keys }, editor)).status).toBe(400);
+    expect((await call("push", "PUT", { endpoint, keys }, editor)).status).toBe(200);
+    expect((await call("push", "PUT", { endpoint: endpointAdmin, keys }, admin)).status).toBe(200);
+    expect((await (await call("push", "POST", { action: "status", endpoint }, admin)).json()).enabled).toBe(false);
+    const payload: { data: Data; revision: number } = await (await call("state", "GET", undefined, admin)).json();
+    const assignee = payload.data.members.find((m) => m.name === "Miembro")!.id;
+    const task = { ...payload.data.tasks[0], id: "push-assignment", creator: payload.data.currentUser, assignee, comments: [] };
+    payload.data.tasks.push(task);
+    const saved = await call("state", "PUT", payload, admin);
+    expect(saved.status).toBe(200);
+    expect((await call("state", "PUT", payload, admin)).status).toBe(409);
+    payload.revision = (await saved.json()).revision;
+    task.title = "Cambio de título";
+    expect((await call("state", "PUT", payload, admin)).status).toBe(200);
+    expect(sendPush).toHaveBeenCalledTimes(1);
+    expect(sendPush).toHaveBeenCalledWith(expect.objectContaining({ endpoint }), expect.objectContaining({ taskId: task.id }));
+
+    expect((await call("logout", "POST", { endpoint }, editor)).status).toBe(200);
+    expect(await db.all("SELECT endpoint FROM orbita_push_devices")).toEqual([{ endpoint: endpointAdmin }]);
   });
 });

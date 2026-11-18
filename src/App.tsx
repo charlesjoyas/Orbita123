@@ -52,6 +52,7 @@ import TaskPanel from "./components/TaskPanel";
 import Views from "./components/Views";
 import TeamAccounts from "./auth/TeamAccounts";
 import AccountSettings from "./auth/AccountSettings";
+import PushSettings from "./components/PushSettings";
 import { roleLabel, useIdentity } from "./auth/session";
 import { retrySave } from "./auth/remote";
 import { readPreference, writePreference } from "./lib/preferences";
@@ -112,6 +113,20 @@ function App() {
   useEffect(() => {
     if (repositoryWarning) notify(repositoryWarning);
   }, [notify]);
+  useEffect(() => {
+    const url = new URL(location.href);
+    const linkedId = url.searchParams.get("task");
+    if (!linkedId) return;
+    const task = data.tasks.find((item) => item.id === linkedId);
+    if (task) {
+      setBoardId(task.boardId);
+      setTaskId(task.id);
+    } else {
+      notify("Esta tarea ya no está disponible.");
+    }
+    url.searchParams.delete("task");
+    history.replaceState(null, "", url);
+  }, [data.tasks, notify]);
   const lastActivity = useRef(data.activities[0]?.id);
   const pull = useRef(0);
   useEffect(() => {
@@ -123,24 +138,7 @@ function App() {
       const timeout = setTimeout(() => setFlying(false), 700);
       return () => clearTimeout(timeout);
     }
-    if (
-      newest.actor !== data.currentUser &&
-      "Notification" in window &&
-      Notification.permission === "granted"
-    ) {
-      try {
-        new Notification("Algo se mueve en tu órbita", {
-          body:
-            data.members.find((m) => m.id === newest.actor)?.name +
-            " " +
-            newest.text,
-          icon: "/icon-192.png",
-        });
-      } catch {
-        /* Los avisos del feed siguen disponibles. */
-      }
-    }
-  }, [data.activities, data.currentUser, data.members]);
+  }, [data.activities]);
   useEffect(() => {
     const id = setInterval(() => {
       const store = useStore.getState();
@@ -1494,38 +1492,7 @@ function SettingsDialog({
             <i />
           </button>
         </div>
-        <button
-          className="secondary full"
-          onClick={async () => {
-            if (!("Notification" in window)) {
-              notify("Este navegador no permite notificaciones.");
-              return;
-            }
-            const permission = await Notification.requestPermission();
-            if (permission === "granted") {
-              notify("Notificaciones permitidas en este dispositivo");
-              try {
-                new Notification("¡Hola desde Órbita! ✨", {
-                  body: "Tu espacio está listo. Los avisos aparecen mientras la app está abierta.",
-                  icon: "/icon.svg",
-                });
-              } catch {
-                const registration = await navigator.serviceWorker?.ready;
-                await registration?.showNotification("¡Hola desde Órbita! ✨", {
-                  body: "Tu espacio está listo.",
-                });
-              }
-            } else
-              notify(
-                "Puedes activar los avisos desde los ajustes del navegador.",
-              );
-          }}
-        >
-          <Bell size={15} /> Permitir notificaciones del dispositivo
-        </button>
-        <p className="small-note">
-          Los avisos remotos con la app cerrada requieren un servidor push.
-        </p>
+        {role && <PushSettings />}
         <hr />
         <h3 className="board-settings-heading">{board.emoji} Este tablero</h3>
         <label>

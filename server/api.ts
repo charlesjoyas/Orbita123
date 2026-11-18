@@ -3,6 +3,7 @@ import type { Data, Member } from "../src/types";
 import { isData, MAX_REQUEST_BYTES } from "../src/data/validation.ts";
 import { columns } from "../src/data/seed.ts";
 import type { Database, Query, Row } from "./db";
+import { configuredPush, createPush, pushEndpoint, pushKeys, type PushTransport } from "./push.ts";
 import {
   equalSecret,
   hashPassword,
@@ -208,8 +209,24 @@ export function createApi(
     origin = process.env.APP_ORIGIN,
     setupToken = process.env.SETUP_TOKEN,
     maxRequestBytes = MAX_REQUEST_BYTES,
-  }: { localSetup?: boolean; origin?: string; setupToken?: string; maxRequestBytes?: number } = {},
+    pushTransport = configuredPush(),
+    background,
+  }: {
+    localSetup?: boolean;
+    origin?: string;
+    setupToken?: string;
+    maxRequestBytes?: number;
+    pushTransport?: PushTransport;
+    background?: (work: Promise<void>) => void;
+  } = {},
 ) {
+  const push = pushTransport && createPush(db, pushTransport);
+  async function flushPush(force = false) {
+    const work = push?.flush(force);
+    if (!work) return;
+    if (background) background(work);
+    else await work;
+  }
   const secureCookie = (req: Request) => new URL(origin || req.url).protocol === "https:";
   const cookieName = (req: Request) =>
     secureCookie(req) ? "__Host-orbita_session" : "orbita_session";
@@ -303,7 +320,7 @@ export function createApi(
         }, "read");
       }
       if (route === "/api/state" && req.method === "GET") {
-        return await db.transaction(async (q) => {
+        const response = await db.transaction(async (q) => {
           const user = await requireSession(req, q);
           const known = url.searchParams.get("revision");
           if (known !== null) {
@@ -312,6 +329,8 @@ export function createApi(
           }
           return json({ user: profile(user), ...(await state(q, user)) });
         }, "read");
+        await flushPush();
+        return response;
       }
       let body: Record<string, unknown> = {};
       if (mutating) {
@@ -503,13 +522,57 @@ export function createApi(
           ?.split(";")
           .map((c) => c.trim())
           .find((c) => c.startsWith(cookieName(req) + "="));
-        if (all)
-          await db.run("DELETE FROM orbita_sessions WHERE token_hash=$1", [
-            hashToken(all.slice(all.indexOf("=") + 1)),
-          ]);
+        if (all) await db.transaction(async (q) => {
+          if (current && pushEndpoint(body.endpoint))
+            await q.run("DELETE FROM orbita_push_devices WHERE endpoint=$1 AND user_id=$2", [body.endpoint, current.id]);
+          await q.run("DELETE FROM orbita_sessions WHERE token_hash=$1", [hashToken(all.slice(all.indexOf("=") + 1))]);
+        });
         return json({ ok: true }, 200, { "Set-Cookie": cookie(req, "", 0) });
       }
       assert(current, 401, "Tu sesión terminó. Inicia sesión de nuevo.");
+      if (route === "/api/push") {
+        if (req.method === "GET") return json({ publicKey: pushTransport?.publicKey ?? null });
+        if (req.method === "PUT") {
+          assert(pushTransport, 503, "Los avisos del dispositivo todavía no están disponibles.");
+          const { endpoint, keys } = body;
+          assert(pushEndpoint(endpoint) && pushKeys(keys), 400, "Este navegador no proporcionó una suscripción compatible.");
+          await db.transaction(async (q) => {
+            const user = await requireSession(req, q);
+            await q.run(
+              `INSERT INTO orbita_push_devices(endpoint,user_id,p256dh,auth,updated_at)
+               VALUES($1,$2,$3,$4,$5)
+               ON CONFLICT(endpoint) DO UPDATE SET user_id=excluded.user_id,p256dh=excluded.p256dh,auth=excluded.auth,updated_at=excluded.updated_at`,
+              [endpoint, user.id, keys.p256dh, keys.auth, Date.now()],
+            );
+            await q.run(
+              `DELETE FROM orbita_push_devices WHERE user_id=$1 AND endpoint NOT IN
+               (SELECT endpoint FROM orbita_push_devices WHERE user_id=$1 ORDER BY updated_at DESC, endpoint LIMIT 8)`,
+              [user.id],
+            );
+          });
+          return json({ enabled: true });
+        }
+        if (req.method === "POST") {
+          const { action, endpoint } = body;
+          assert(pushEndpoint(endpoint), 400, "El dispositivo no tiene una suscripción compatible.");
+          if (action === "off") {
+            await db.run("DELETE FROM orbita_push_devices WHERE endpoint=$1 AND user_id=$2", [endpoint, current.id]);
+            return json({ enabled: false });
+          }
+          if (action === "test") {
+            assert(push, 503, "Los avisos del dispositivo todavía no están disponibles.");
+            await reserveAttempt(hashToken("push-test:" + current.id));
+            assert(await push.test(current.id, endpoint), 409, "Activa los avisos en este dispositivo primero.");
+            return json({ sent: true });
+          }
+          if (action === "status") {
+            const [device] = await db.all(
+              "SELECT endpoint FROM orbita_push_devices WHERE endpoint=$1 AND user_id=$2", [endpoint, current.id],
+            );
+            return json({ enabled: Boolean(device) });
+          }
+        }
+      }
       if (route === "/api/password" && req.method === "POST") {
         assert(
           validPassword(body.current) && validPassword(body.password),
@@ -625,6 +688,8 @@ export function createApi(
             await q.run("DELETE FROM orbita_sessions WHERE user_id=$1", [
               target.id,
             ]);
+          if (!active)
+            await q.run("DELETE FROM orbita_push_devices WHERE user_id=$1", [target.id]);
           if (!active || role !== "admin")
             await q.run("DELETE FROM orbita_invites WHERE created_by=$1 AND used_at IS NULL", [target.id]);
           await q.run(
@@ -725,9 +790,11 @@ export function createApi(
             "UPDATE orbita_state SET payload=$1,revision=revision+1 WHERE slot='main'",
             [JSON.stringify(draft)],
           );
-          return { revision: revision + 1 };
+          const queued = await push?.enqueue(q, before.tasks, draft.tasks);
+          return { revision: revision + 1, queued };
         });
-        return json(result);
+        await flushPush(result.queued);
+        return json({ revision: result.revision });
       }
       return json({ error: "No encontramos esa acción." }, 404);
     } catch (error) {

@@ -23,7 +23,7 @@ Abre la dirección que imprime Vite. En Windows también puedes usar `Iniciar Ó
 - Tareas con asignación, prioridades, fechas, etiquetas, checklists, comentarios, reacciones, archivos y enlaces. Puedes crear tareas desde plantillas o escribir el título con fechas y etiquetas en el campo rápido.
 - Al completar una tarea recurrente se crea su siguiente ocurrencia. El temporizador de foco, las rachas y el resumen se basan en la actividad registrada.
 - Inicio de sesión con correo y contraseña. Los administradores crean invitaciones y gestionan roles y cuentas. Los cambios llegan a otras sesiones mediante consultas cada siete segundos. En un conflicto se conserva un borrador que puede descargarse desde el perfil.
-- PWA instalable bajo HTTPS o localhost. La caché permite cargar la interfaz. La sesión y la colaboración requieren conexión con el servidor. Los avisos de actividad funcionan con la app abierta.
+- PWA instalable bajo HTTPS o localhost. Desde el perfil se pueden activar avisos de asignación por Web Push en cada dispositivo.
 
 ## Verificación
 

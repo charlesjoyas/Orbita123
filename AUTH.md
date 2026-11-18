@@ -70,6 +70,14 @@ La API prepara el esquema en el primer arranque. Para inicializar Turso de forma
 
 Verifica `/api/session` desde el dominio público, crea el administrador si el espacio está vacío y comprueba una tarea desde otra sesión. Configura un origen y una base de prueba propios para los despliegues de vista previa. Los cuerpos de escritura se limitan a 4 MiB en Vercel. [Límites de Vercel Functions](https://vercel.com/docs/functions/limitations#request-body-size)
 
+### Avisos de asignación
+
+Cada integrante puede abrir **Perfil → Activar avisos en este dispositivo**, aceptar el permiso del navegador y pulsar **Enviar aviso de prueba**. En iPhone o iPad, primero debe añadir Órbita a la pantalla de inicio desde Safari y abrirla desde el icono. Al tocar un aviso se abre la tarea. Cerrar sesión desactiva los avisos de ese navegador para esa cuenta.
+
+Configura `PUSH_PUBLIC_KEY` y `PUSH_PRIVATE_KEY` con el par VAPID generado por `pnpm exec web-push generate-vapid-keys`. Mantén el mismo par entre despliegues y guarda la clave privada solo en el entorno del servidor. Usa el origen HTTPS de Órbita o un contacto `mailto:` válido como `PUSH_SUBJECT`.
+
+Se guarda un aviso por dispositivo en la misma transacción que la asignación. Tras confirmar el cambio se intenta el envío. Los errores temporales se reintentan con la siguiente actividad del espacio. El aviso en la pantalla bloqueada muestra un texto genérico y los detalles se consultan al abrir Órbita.
+
 ### Copias y restauración
 
 Ejecuta `pnpm db:backup /ruta/nueva/orbita.sqlite` con el mismo `ORBITA_DB_PATH` del servidor. El comando crea una copia consistente aunque la aplicación esté abierta y verifica el archivo con SQLite. En Docker puedes hacerlo con `docker exec orbita node scripts/backup.mjs /data/copia.sqlite` y sacar la copia del volumen con `docker cp`. Conserva las copias con acceso restringido porque contienen cuentas, sesiones y tareas.

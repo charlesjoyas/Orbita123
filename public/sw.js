@@ -1,4 +1,4 @@
-const CACHE = "orbita-v3";
+const CACHE = "orbita-v4";
 const ASSET =
   /^(\/assets\/|\/icon(?:-\d+)?\.(?:svg|png)$|\/manifest\.webmanifest$)/;
 self.addEventListener("install", (event) => {
@@ -70,4 +70,32 @@ self.addEventListener("fetch", (event) => {
       }
     })(),
   );
+});
+self.addEventListener("push", (event) => {
+  let payload;
+  try {
+    payload = event.data?.json();
+  } catch {
+    payload = null;
+  }
+  event.waitUntil(self.registration.showNotification("Órbita", {
+    body: payload?.test
+      ? "Los avisos funcionan en este dispositivo."
+      : "Te asignaron una tarea. Abre Órbita para verla.",
+    icon: "/icon-192.png",
+    tag: typeof payload?.tag === "string" ? payload.tag : undefined,
+    data: { taskId: typeof payload?.taskId === "string" ? payload.taskId : undefined },
+  }));
+});
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = new URL("/", self.location.origin);
+  const taskId = event.notification.data?.taskId;
+  if (typeof taskId === "string") url.searchParams.set("task", taskId);
+  event.waitUntil((async () => {
+    const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    const open = clients.find((client) => client.url === url.href);
+    if (open) await open.focus();
+    else await self.clients.openWindow(url.href);
+  })());
 });

@@ -20,6 +20,10 @@ export const schema = [
   `CREATE TABLE IF NOT EXISTS orbita_limits (key TEXT PRIMARY KEY,attempts INTEGER NOT NULL,expires_at BIGINT NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS orbita_removed (key TEXT PRIMARY KEY, fingerprint TEXT NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS orbita_activity_read (user_id TEXT NOT NULL REFERENCES orbita_users(id) ON DELETE CASCADE, activity_id TEXT NOT NULL, PRIMARY KEY(user_id,activity_id))`,
+  `CREATE TABLE IF NOT EXISTS orbita_push_devices (endpoint TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES orbita_users(id) ON DELETE CASCADE,p256dh TEXT NOT NULL,auth TEXT NOT NULL,updated_at INTEGER NOT NULL)`,
+  `CREATE INDEX IF NOT EXISTS orbita_push_devices_user ON orbita_push_devices(user_id)`,
+  `CREATE TABLE IF NOT EXISTS orbita_push_jobs (id INTEGER PRIMARY KEY AUTOINCREMENT,endpoint TEXT NOT NULL,user_id TEXT NOT NULL,task_id TEXT NOT NULL,created_at INTEGER NOT NULL,next_at INTEGER NOT NULL,attempts INTEGER NOT NULL DEFAULT 0)`,
+  `CREATE INDEX IF NOT EXISTS orbita_push_jobs_due ON orbita_push_jobs(next_at)`,
 ];
 
 export function statement(sql: string, params: unknown[] = []) {
