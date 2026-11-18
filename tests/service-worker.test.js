@@ -29,7 +29,7 @@ function worker(fetchImpl) {
     self,
     caches: {
       open: async () => cache,
-      keys: async () => ["another-app", "orbita-v1", "orbita-v2", "orbita-v3", "orbita-v4", "orbita-v5"],
+      keys: async () => ["another-app", "orbita-v1", "orbita-v2", "orbita-v3", "orbita-v4", "orbita-v5", "orbita-v6"],
       delete: async (key) => deleted.push(key),
     },
     fetch: fetchImpl,
@@ -78,7 +78,7 @@ describe("Caché offline", () => {
     let activation;
     w.events.activate({ waitUntil: (p) => (activation = p) });
     await activation;
-    expect(w.deleted).toEqual(["orbita-v1", "orbita-v2", "orbita-v3", "orbita-v4"]);
+    expect(w.deleted).toEqual(["orbita-v1", "orbita-v2", "orbita-v3", "orbita-v4", "orbita-v5"]);
   });
   it("nunca intercepta la API, incluso al navegar directamente a una ruta protegida", () => {
     const w = worker(vi.fn());

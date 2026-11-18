@@ -268,14 +268,6 @@ export default memo(function TaskCard({
                 {task.title}
               </h3>
             )}
-            <button
-              className="drag-handle"
-              title="Arrastrar tarea"
-              aria-label={`Arrastrar ${task.title}`}
-              onClick={(e) => e.stopPropagation()}
-              {...attributes}
-              {...listeners}
-            ><GripVertical size={16} /></button>
           </div>
           {layout === "full" && task.blocked && (
             <p className="blocked">
@@ -297,8 +289,8 @@ export default memo(function TaskCard({
               </span>
             </div>
           )}
-          {layout !== "minimal" && <div className="card-footer">
-            <div className="card-meta">
+          {(layout !== "minimal" || !(readOnly || overlay)) && <div className="card-footer">
+            {layout !== "minimal" && <div className="card-meta">
               {task.due && (
                 <span
                   className={
@@ -327,9 +319,20 @@ export default memo(function TaskCard({
                 <Star size={12} fill="#d6b65e" color="#d6b65e" />
               )}
               {task.completedAt && <span title="Completada" className="done-meta"><CheckCheck size={14} /></span>}
-            </div>
-            <div className="card-people">
-              <button
+            </div>}
+            <div className="card-actions">
+              {!(readOnly || overlay) && (
+                <button
+                  className="drag-handle"
+                  title="Arrastrar tarea"
+                  aria-label={`Arrastrar ${task.title}`}
+                  onClick={(e) => e.stopPropagation()}
+                  {...attributes}
+                  {...listeners}
+                ><GripVertical size={16} /></button>
+              )}
+              {layout !== "minimal" && <div className="card-people">
+                <button
                 className="pass-small"
                 aria-label="Pasar la pelota"
                 title="Pasar la pelota"
@@ -347,8 +350,9 @@ export default memo(function TaskCard({
                 }}
               >
                 <ArrowUpRight size={13} />
-              </button>
-              <AvatarStack people={people} />
+                </button>
+                <AvatarStack people={people} />
+              </div>}
             </div>
           </div>}
         </div>

@@ -54,10 +54,12 @@ function BoardColumn({
   previewTask?: Task;
 }) {
   const role = useIdentity((s) => s.user?.role);
+  const canManageColumn = !role || role === "admin";
+  const canAddTask = role !== "viewer";
   const sortable = useSortable({
     id: column.id,
     data: { type: "column" },
-    disabled: !!role && role !== "admin",
+    disabled: !canManageColumn,
   });
   const { setNodeRef, isOver } = useDroppable({
     id: `drop-${column.id}`,
@@ -84,42 +86,48 @@ function BoardColumn({
       }
     >
       <header className="column-header">
-        <span className="column-emoji">{column.emoji}</span>
-        <h2
-          onDoubleClick={() => {
-            if (!role || role === "admin") onEdit(column);
-          }}
-        >
-          {column.name}
-        </h2>
-        <span className="column-count" title={column.wip ? `Límite de trabajo en curso: ${column.wip}` : undefined}>
-          {count}{column.wip ? ` / ${column.wip}` : ""}
-        </span>
-        <button
-          {...sortable.attributes}
-          {...sortable.listeners}
-          className="column-grip"
-          aria-label={`Reordenar columna ${column.name}`}
-          title="Reordenar columna"
-        >
-          <GripVertical size={13} />
-        </button>
-        <button
-          className="icon-button"
-          aria-label={`Editar columna ${column.name}`}
-          title="Editar columna"
-          onClick={() => onEdit(column)}
-        >
-          <MoreHorizontal size={18} />
-        </button>
-        <button
-          className="icon-button"
-          aria-label={`Añadir a ${column.name}`}
-          title="Añadir tarea"
-          onClick={() => onAdd(column.id)}
-        >
-          <Plus size={17} />
-        </button>
+        <div className="column-heading">
+          <span className="column-emoji" aria-hidden="true">{column.emoji}</span>
+          <h2 onDoubleClick={canManageColumn ? () => onEdit(column) : undefined}>
+            {column.name}
+          </h2>
+          <span className="column-count" title={column.wip ? `Límite de trabajo en curso: ${column.wip}` : undefined}>
+            {count}{column.wip ? ` / ${column.wip}` : ""}
+          </span>
+        </div>
+        {canAddTask && (
+          <div className="column-tools">
+            {canManageColumn && (
+              <>
+                <button
+                  {...sortable.attributes}
+                  {...sortable.listeners}
+                  className="column-grip"
+                  aria-label={`Reordenar columna ${column.name}`}
+                  title="Reordenar columna"
+                >
+                  <GripVertical size={13} />
+                </button>
+                <button
+                  className="icon-button"
+                  aria-label={`Editar columna ${column.name}`}
+                  title="Editar columna"
+                  onClick={() => onEdit(column)}
+                >
+                  <MoreHorizontal size={18} />
+                </button>
+              </>
+            )}
+            <button
+              className="icon-button column-add-task"
+              aria-label={`Añadir a ${column.name}`}
+              title="Añadir tarea"
+              onClick={() => onAdd(column.id)}
+            >
+              <Plus size={17} />
+            </button>
+          </div>
+        )}
       </header>
       <div className="column-indicator">
         <span

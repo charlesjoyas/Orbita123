@@ -1,4 +1,4 @@
-const CACHE = "orbita-v5";
+const CACHE = "orbita-v6";
 const ASSET =
   /^(\/assets\/|\/icon(?:-\d+)?\.(?:svg|png)$|\/manifest\.webmanifest$)/;
 self.addEventListener("install", (event) => {

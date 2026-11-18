@@ -152,9 +152,11 @@ describe("Creación desde la interfaz", () => {
   it("el formulario de columna guarda en esa columna y puede cerrarse explícitamente", async () => {
     const user = userEvent.setup();
     render(<App />);
-    await user.click(
-      screen.getByRole("button", { name: "Añadir a En revisión" }),
-    );
+    const title = screen.getByRole("heading", { name: "En revisión" });
+    const add = screen.getByRole("button", { name: "Añadir a En revisión" });
+    expect(title.closest(".column-heading")?.contains(add)).toBe(false);
+    expect(add.closest(".column-tools")).not.toBeNull();
+    await user.click(add);
     const composer = within(document.querySelector(".inline-composer")!);
     await user.type(
       composer.getByLabelText("Crear tarea rápidamente"),

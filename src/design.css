@@ -249,13 +249,15 @@ button, input, select, textarea { transition: background-color var(--motion-fast
 .board-column.lane-done { --lane: var(--success); --lane-soft: var(--success-soft); }
 .board-column.lane-custom { --lane-soft: color-mix(in srgb, var(--column-color) 18%, var(--surface)); }
 .board-column.over { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
-.column-header { padding: 0 0 6px; gap: 4px; flex-wrap: nowrap; min-height: 32px; }
+.column-header { padding: 0 0 6px; gap: 4px; align-items: center; min-height: 32px; }
+.column-heading { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 4px; flex: 1; min-width: 0; }
+.column-tools { display: flex; align-items: center; justify-content: flex-end; flex: 0 0 auto; gap: 4px; }
 .column-header h2 { font-size: 14px; font-weight: 650; white-space: normal; line-height: 1.2; flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .column-emoji { font-size: 16px; }
 .column-count { font-size: 12px; font-weight: 700; color: var(--lane); background: var(--lane-soft); border-radius: 20px; padding: 2px 6px; white-space: nowrap; }
 .column-header .icon-button, .column-header .column-grip { color: var(--text-secondary); width: 24px; min-width: 24px; min-height: 30px; opacity: 1; padding: 0; margin: 0; }
 .column-header .column-grip { width: 18px; min-width: 18px; }
-.column-header .icon-button:last-child { color: var(--accent); }
+.column-header .column-add-task { color: var(--accent); }
 .column-indicator, [data-theme="dark"] .column-indicator { height: 4px; margin-bottom: 8px; background: var(--lane-soft); }
 .column-indicator span { background: var(--lane); }
 .lane-custom .column-indicator span { background: color-mix(in srgb, var(--column-color) 48%, var(--accent)); }
@@ -283,8 +285,12 @@ button, input, select, textarea { transition: background-color var(--motion-fast
 .tag.red, [data-theme="dark"] .tag.red { color: var(--danger); background: var(--danger-soft); }
 .card-title-row { align-items: center; gap: 4px; }
 .card-title-row h3, .completed .card-title-row h3, [data-theme="dark"] .card-title-row h3 { font-size: 15px; line-height: 1.28; color: var(--text-primary); overflow-wrap: anywhere; font-weight: 600; margin: 0; }
+.card-title-row :is(h3, .inline-title) { flex: 1; min-width: 0; }
 .completed .card-title-row h3 { color: var(--text-secondary); }
-.card-title-row .drag-handle { margin-left: auto; min-width: 24px; min-height: 30px; padding: 0; opacity: 1; color: var(--text-tertiary); }
+.card-actions { display: flex; align-items: center; gap: 4px; margin-inline-start: auto; flex: 0 0 auto; }
+.card-actions .drag-handle { align-items: center; justify-content: center; margin: 0; min-width: 24px; min-height: 30px; padding: 0; opacity: 1; color: var(--text-tertiary); }
+.card-minimal .card-body { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px; }
+.card-minimal :is(.card-title-row, .card-footer) { margin: 0; }
 .card-title-row .complete-circle { flex: 0 0 26px; width: 26px; height: 32px; padding: 0; border: 0; background: none; opacity: 1; display: grid; place-items: center; }
 .check-mark { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 7px; border: 1.5px solid var(--border); color: transparent; }
 .complete-circle:hover .check-mark { color: var(--accent); background: var(--accent-soft); border-color: var(--accent); }
@@ -294,7 +300,7 @@ button, input, select, textarea { transition: background-color var(--motion-fast
 .card-meta .late, .late { color: var(--danger); font-weight: 700; }
 .card-meta .due-today { color: var(--info); background: var(--info-soft); }
 .card-meta .done-meta { color: var(--success); }
-.card-footer { gap: 4px; margin-top: 4px; }
+.card-footer { gap: 4px; margin-top: 4px; flex-wrap: wrap; }
 .card-people { flex-shrink: 0; gap: 2px; }
 .card-people .avatar-stack { display: flex; }
 .avatar-stack .avatar + .avatar { margin-left: -6px; }
@@ -385,11 +391,15 @@ button, input, select, textarea { transition: background-color var(--motion-fast
   .mobile-nav button { color: var(--text-secondary); font-size: 12px; }
   .mobile-nav button.active { color: var(--accent); }
 }
-@media (pointer: coarse), (max-width: 640px) {
+@media (any-pointer: coarse), (max-width: 640px) {
   .app :is(.icon-button, .profile-button, .sidebar-help, .quick-plus, .quick-submit, .template-button, .view-tabs button, .filter-button, .invite-button, .mobile-nav button, .modal .primary, .modal .secondary, .save-chip button, .column-actions .add-column, .add-card) { min-height: 44px; min-width: 44px; }
   .capture-picker select, .capture-tags summary, .capture-smart, .capture-popover button { min-height: 44px; }
   .capture-picker select { min-width: 44px; }
+  .column-header { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .column-heading { gap: 8px; min-height: 32px; }
   .column-header .column-grip { min-width: 44px; min-height: 44px; }
-  .card-title-row .drag-handle, .card-people .pass-small { min-width: 44px; min-height: 44px; }
+  .column-tools { gap: 0; }
+  .card-minimal .card-body { grid-template-columns: minmax(0, 1fr); }
+  .card-actions .drag-handle, .card-people .pass-small { min-width: 44px; min-height: 44px; }
   .card-title-row .complete-circle { width: 44px; height: 44px; flex-basis: 44px; }
 }
